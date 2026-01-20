@@ -311,7 +311,7 @@ kubectl describe podrunner test-runner-1
 
 ### Secret not found
 
-```
+```text
 Error: secret "runner-xyz-jit" not found
 ```
 
