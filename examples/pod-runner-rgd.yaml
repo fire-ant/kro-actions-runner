@@ -1,0 +1,61 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: pod-runner
+  labels:
+    # This label is used for RGD discovery by kro-actions-runner
+    # Must match the ACTIONS_RUNNER_SCALE_SET_NAME env var in the runner pods
+    # AND must match the runnerScaleSetName in the ARC Helm values
+    actions.github.com/scale-set-name: "slapchop-linux-builders"
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: PodRunner
+    spec:
+      # Runner name (also used as the secret name created by ARC)
+      runnerName: string
+
+  resources:
+    # Reference the ARC-created secret (wait for it to exist)
+    - id: jitSecret
+      externalRef:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: ${schema.spec.runnerName}
+
+    # The actual runner Pod
+    - id: runnerPod
+      readyWhen:
+        - ${runnerPod.status.phase == "Succeeded" || runnerPod.status.phase == "Failed"}
+      template:
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          # Append -job to avoid conflicting with the kro-actions-runner pod
+          name: ${schema.spec.runnerName}-job
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: runner
+              # GitHub Actions runner image - this will run the actual workflow
+              image: ghcr.io/actions/actions-runner:latest
+              command: ["/home/runner/run.sh"]
+              env:
+                # JIT config from the ARC-created secret
+                - name: ACTIONS_RUNNER_INPUT_JITCONFIG
+                  valueFrom:
+                    secretKeyRef:
+                      # ARC creates a secret with the runner name (no suffix)
+                      name: ${schema.spec.runnerName}
+                      key: jitToken
+                # Runner name for identification
+                - name: RUNNER_NAME
+                  value: ${schema.spec.runnerName}
+              resources:
+                requests:
+                  cpu: "100m"
+                  memory: "256Mi"
+                limits:
+                  cpu: "500m"
+                  memory: "512Mi"

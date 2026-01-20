@@ -1,0 +1,79 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: vm-runner
+  labels:
+    # This label is used for RGD discovery by kro-actions-runner
+    # Match this to your ARC scale set name for VM-based runners
+    actions.github.com/scale-set-name: "vm-runners"
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: VMRunner
+    spec:
+      # Reference to the JIT config secret (created by kro-actions-runner)
+      jitConfigSecretName: string
+      # Runner name
+      runnerName: string
+
+  resources:
+    # Cloud-init secret with runner startup script
+    - id: cloudinit-secret
+      template:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: ${schema.spec.runnerName}-cloudinit
+        stringData:
+          userdata: |
+            #cloud-config
+            runcmd:
+              # Install GitHub Actions runner
+              - |
+                cd /home/ubuntu
+                mkdir actions-runner && cd actions-runner
+                curl -o actions-runner-linux-x64-2.321.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.321.0/actions-runner-linux-x64-2.321.0.tar.gz
+                tar xzf actions-runner-linux-x64-2.321.0.tar.gz
+                chown -R ubuntu:ubuntu /home/ubuntu/actions-runner
+              # Configure and run runner with JIT config from environment
+              - |
+                su - ubuntu -c 'cd /home/ubuntu/actions-runner && RUNNER_ALLOW_RUNASROOT=1 ./run.sh --jitconfig "$ACTIONS_RUNNER_INPUT_JITCONFIG"'
+
+    # KubeVirt VirtualMachineInstance
+    - id: runner-vm
+      template:
+        apiVersion: kubevirt.io/v1
+        kind: VirtualMachineInstance
+        metadata:
+          name: ${schema.spec.runnerName}
+        spec:
+          domain:
+            devices:
+              disks:
+                - name: containerdisk
+                  disk:
+                    bus: virtio
+                - name: cloudinitdisk
+                  disk:
+                    bus: virtio
+              interfaces:
+                - name: default
+                  masquerade: {}
+            resources:
+              requests:
+                memory: 2Gi
+                cpu: "2"
+          networks:
+            - name: default
+              pod: {}
+          volumes:
+            - name: containerdisk
+              containerDisk:
+                image: quay.io/containerdisks/ubuntu:22.04
+            - name: cloudinitdisk
+              cloudInitNoCloud:
+                secretRef:
+                  name: ${schema.spec.runnerName}-cloudinit
+          # Pass JIT config as environment variable via DownwardAPI
+          # This makes it available to cloud-init
+          terminationGracePeriodSeconds: 0

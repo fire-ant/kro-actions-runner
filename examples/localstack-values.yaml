@@ -1,0 +1,61 @@
+# Helm values for LocalStack deployment
+# Enables EC2 service for testing ACK controllers
+# Docker socket is mounted via kind extraMounts
+
+# Enable debug logging
+debug: true
+
+# Service configuration
+service:
+  type: ClusterIP
+  # EC2 API endpoint will be available at http://localstack.localstack.svc.cluster.local:4566
+
+# Persistence
+persistence:
+  enabled: false
+
+# Resource limits
+resources:
+  requests:
+    cpu: "500m"
+    memory: "512Mi"
+  limits:
+    cpu: "2000m"
+    memory: "2Gi"
+
+# Docker socket configuration and HTTPS
+extraEnvVars:
+  - name: DOCKER_HOST
+    value: "unix:///var/run/docker.sock"
+  - name: LOCALSTACK_HOST
+    value: "localstack.localstack.svc.cluster.local"
+  - name: EDGE_PORT
+    value: "4566"
+  # Enable HTTPS with custom certificates (combined PEM format)
+  - name: GATEWAY_LISTEN
+    value: "0.0.0.0:4566,0.0.0.0:443"
+  - name: USE_SSL
+    value: "true"
+  - name: CUSTOM_SSL_CERT_PATH
+    value: "/etc/localstack/tls/server.pem"
+  # Disable automatic certificate download
+  - name: SKIP_SSL_CERT_DOWNLOAD
+    value: "1"
+
+# Mount docker socket from kind node and TLS certificates
+volumes:
+  - name: docker-sock
+    hostPath:
+      path: /var/run/docker.sock
+      type: Socket
+  - name: tls-certs
+    secret:
+      secretName: localstack-tls-certs
+      defaultMode: 0644
+
+volumeMounts:
+  - name: docker-sock
+    mountPath: /var/run/docker.sock
+  - name: tls-certs
+    mountPath: /etc/localstack/tls
+    readOnly: true

@@ -1,0 +1,51 @@
+# SPDX-license-identifier: Apache-2.0
+##############################################################################
+# Copyright (c) 2024
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+name: Scheduled Versions verification
+# yamllint disable-line rule:truthy
+on:
+  schedule:
+    - cron: "0 0 * * 5"
+  workflow_dispatch:
+permissions: read-all
+jobs:
+  check-versions:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+        with:
+          # Fine-grained PAT with contents:write and workflows:write scopes
+          token: ${{ secrets.WORKFLOW_TOKEN }}
+          persist-credentials: true
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # 6.1.0
+        with:
+          go-version: "^1.25"
+      - uses: technote-space/create-pr-action@91114507cf92349bec0a9a501c2edf1635427bc5 # 2.1.4
+        with:
+          EXECUTE_COMMANDS: |
+            ./ci/update_versions.sh
+          COMMIT_MESSAGE: "Upgrade versions files"
+          COMMIT_NAME: "electrocucaracha bot"
+          PR_BRANCH_NAME: "versions-update-${PR_ID}"
+          PR_TITLE: "chore: update versions"
+  check-dockerfile:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+        with:
+          persist-credentials: false
+      - name: update Dockerfile
+        uses: ludeeus/dockerfile-updater@eaf8ea79220d076eb46c127fa9895e3de3e0a512 # 21.01.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pr_title: "chore: update Dockerfile"
