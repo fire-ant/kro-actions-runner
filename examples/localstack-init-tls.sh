@@ -11,7 +11,7 @@ mkdir -p /tmp/localstack/tls
 
 # Generate self-signed certificate
 # Subject Alternative Names include common LocalStack hostnames
-cat > /tmp/localstack/tls/openssl.cnf <<EOF
+cat >/tmp/localstack/tls/openssl.cnf <<EOF
 [req]
 distinguished_name = req_distinguished_name
 x509_extensions = v3_req
