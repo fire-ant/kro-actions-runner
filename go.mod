@@ -1,4 +1,4 @@
-module github.com/electrocucaracha/kubevirt-actions-runner
+module github.com/fire-ant/kro-actions-runner
 
 go 1.25
 

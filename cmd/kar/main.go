@@ -25,8 +25,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/electrocucaracha/kubevirt-actions-runner/cmd/kar/app"
-	runner "github.com/electrocucaracha/kubevirt-actions-runner/internal"
+	"github.com/fire-ant/kro-actions-runner/cmd/kar/app"
+	runner "github.com/fire-ant/kro-actions-runner/internal"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 	"k8s.io/client-go/dynamic"
