@@ -2,7 +2,7 @@
 
 ## ✅ Completed: Secure KRO-Based GitHub Actions Runner
 
-Successfully refactored `kubevirt-actions-runner` into **kro-actions-runner** - a secure, flexible GitHub Actions runner that uses KRO (Kubernetes Resource Orchestrator) to provision compute resources dynamically.
+**kro-actions-runner** - a secure, flexible GitHub Actions runner that uses KRO (Kubernetes Resource Orchestrator) to provision compute resources dynamically. Inspired by kubevirt-actions-runner.
 
 ---
 
@@ -169,13 +169,12 @@ helm upgrade --install --namespace arc-runners --create-namespace \
 
 ---
 
-## 🔄 Comparison with Other Approaches
+## 🔄 Key Advantages
 
-| Approach | Controller Mods? | Secret Security | Multi-Backend | Upstream Compat |
-|----------|-----------------|-----------------|---------------|-----------------|
-| **kro-actions-runner** | ❌ No | ✅ Excellent | ✅ Yes (via RGD) | ✅ Full |
-| Controller modification | ✅ Yes | ✅ Good | ⚠️ Limited | ❌ Fork required |
-| kubevirt-actions-runner | ❌ No | ✅ Good | ❌ VMs only | ✅ Full |
+- ❌ No controller modifications required
+- ✅ Excellent secret security via Kubernetes Secrets
+- ✅ Multi-backend support via RGD (Pods, VMs, cloud instances)
+- ✅ Full upstream ARC compatibility
 
 ---
 

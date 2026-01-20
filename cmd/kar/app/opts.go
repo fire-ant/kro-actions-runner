@@ -18,13 +18,10 @@ package app
 
 // Opts stores all the options for configuring the root kar command.
 type Opts struct {
-	// Legacy KubeVirt mode (deprecated, kept for compatibility)
-	VMTemplate string
-
-	// KRO mode (only mode supported)
+	// Scale set name for RGD discovery
 	ScaleSetName string
 
-	// Common options
+	// Runner configuration
 	RunnerName string
 	JitConfig  string
 }

@@ -1,6 +1,8 @@
 # KRO Actions Runner
 
-A custom GitHub Actions runner image that uses **KRO (Kubernetes Resource Orchestrator)** to provision compute resources dynamically. This provides the security of the kubevirt-actions-runner approach while supporting multiple compute backends (Pods, VMs, cloud instances) through RGD (ResourceGraphDefinition) templates.
+A custom GitHub Actions runner image that uses **KRO (Kubernetes Resource Orchestrator)** to provision compute resources dynamically. Supports multiple compute backends (Pods, VMs, cloud instances) through RGD (ResourceGraphDefinition) templates.
+
+> **Inspiration**: This project was inspired by [kubevirt-actions-runner](https://github.com/electrocucaracha/kubevirt-actions-runner), which pioneered the approach of provisioning ephemeral compute resources for GitHub Actions runners.
 
 ## Overview
 
@@ -237,21 +239,12 @@ spec:
 | `ACTIONS_RUNNER_INPUT_JITCONFIG` | Yes | - | JIT config from ARC (automatic) |
 | `RUNNER_NAME` | Yes | - | Runner name (use Pod name) |
 | `ACTIONS_RUNNER_SCALE_SET_NAME` | Yes | - | Scale set name for RGD discovery |
-| `USE_KRO` | No | `true` | Use KRO mode (vs legacy KubeVirt) |
 | `KAR_CLEANUP_TIMEOUT` | No | `5m` | Cleanup timeout duration |
 
 ## Command-Line Flags
 
 ```bash
-# KRO mode (default)
-kar --use-kro \
-    --scale-set-name "default" \
-    --runner-name "runner-abc123" \
-    --actions-runner-input-jitconfig "<jit-config>"
-
-# Legacy KubeVirt mode
-kar --use-kro=false \
-    --kubevirt-vm-template "ubuntu-jammy-vm" \
+kar --scale-set-name "default" \
     --runner-name "runner-abc123" \
     --actions-runner-input-jitconfig "<jit-config>"
 ```
@@ -342,13 +335,13 @@ rules:
 5. **Use separate namespaces** for different runner types
 6. **Consider external-secrets operator** for secret rotation
 
-## Comparison with Other Approaches
+## Key Features
 
-| Approach | Pros | Cons |
-|----------|------|------|
-| **kro-actions-runner (this project)** | ✅ No controller modifications<br>✅ Supports multiple compute types<br>✅ Secure secret handling<br>✅ Uses upstream ARC | ⚠️ Requires KRO installation |
-| **Controller modification** | ✅ Direct integration | ❌ Must maintain fork<br>❌ Complex upgrades<br>❌ Conflicts with upstream |
-| **kubevirt-actions-runner** | ✅ No controller modifications<br>✅ Proven approach | ❌ KubeVirt-only<br>❌ No abstraction for other backends |
+- ✅ No controller modifications required
+- ✅ Supports multiple compute types (Pods, VMs, cloud instances)
+- ✅ Secure secret handling via Kubernetes Secrets
+- ✅ Uses upstream ARC unchanged
+- ✅ Flexible RGD-based resource provisioning
 
 ## Contributing
 

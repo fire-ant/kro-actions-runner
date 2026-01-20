@@ -31,15 +31,11 @@ func installFlags(flags *pflag.FlagSet, cmdOptions *Opts) {
 	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	v.AutomaticEnv()
 
-	// Legacy KubeVirt mode flags (deprecated)
-	flags.StringVarP(&cmdOptions.VMTemplate, "kubevirt-vm-template", "t", "vm-template",
-		"The VirtualMachine resource to use as the template (deprecated, kept for compatibility).")
-
-	// KRO mode flags (only mode supported)
+	// KRO RGD discovery
 	flags.StringVarP(&cmdOptions.ScaleSetName, "scale-set-name", "s", "",
 		"The scale set name for RGD discovery. Uses label matching.")
 
-	// Common flags
+	// Runner configuration
 	flags.StringVarP(&cmdOptions.RunnerName, "runner-name", "r", "runner",
 		"The name of the runner.")
 	flags.StringVarP(&cmdOptions.JitConfig, "actions-runner-input-jitconfig", "c", "",

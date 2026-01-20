@@ -96,7 +96,6 @@ func main() {
 
 	// Parse flags
 	pflag.StringVar(&opts.ScaleSetName, "scale-set-name", os.Getenv("ACTIONS_RUNNER_SCALE_SET_NAME"), "Scale set name")
-	pflag.StringVar(&opts.VMTemplate, "kubevirt-vm-template", "vm-template", "VM template")
 	pflag.StringVar(&opts.RunnerName, "runner-name", os.Getenv("RUNNER_NAME"), "Runner name")
 	pflag.StringVar(&opts.JitConfig, "actions-runner-input-jitconfig", os.Getenv("ACTIONS_RUNNER_INPUT_JITCONFIG"), "JIT config")
 	pflag.Parse()
