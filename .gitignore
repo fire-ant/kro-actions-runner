@@ -1,6 +1,6 @@
 # Binaries
 bin/
-kar
+/kar
 *.exe
 *.dll
 *.so
