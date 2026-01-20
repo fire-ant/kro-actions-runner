@@ -83,7 +83,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: kro-runner
-    namespace: arc-runners  # IMPORTANT: Update this to match your runner namespace
+    namespace: arc-runners # IMPORTANT: Update this to match your runner namespace
 roleRef:
   kind: ClusterRole
   name: kro-runner-cluster

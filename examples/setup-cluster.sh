@@ -25,7 +25,7 @@ kind create cluster --name "$CLUSTER_NAME" --config "$SCRIPT_DIR/$KIND_CONFIG"
 
 # Step 3: Install KRO
 echo "Step 3: Installing KRO..."
-helm install kro oci://registry.k8s.io/kro/charts/kro  --namespace kro-system --create-namespace
+helm install kro oci://registry.k8s.io/kro/charts/kro --namespace kro-system --create-namespace
 
 # Wait for KRO to be ready
 echo "Waiting for KRO controller to be ready..."

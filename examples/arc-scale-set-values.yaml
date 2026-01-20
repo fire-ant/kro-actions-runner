@@ -8,7 +8,7 @@
 
 # GitHub configuration
 githubConfigUrl: https://github.com/your-org/your-repo
-githubConfigSecret: github-token-secret  # Pre-create this secret
+githubConfigSecret: github-token-secret # checkov:skip=CKV_SECRET_6:This is a placeholder value, not an actual secret
 
 # Runner template - uses kro-actions-runner image
 template:
