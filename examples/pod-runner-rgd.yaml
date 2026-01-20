@@ -48,7 +48,7 @@ spec:
                     secretKeyRef:
                       # ARC creates a secret with the runner name (no suffix)
                       name: ${schema.spec.runnerName}
-                      key: jitToken
+                      key: .jitconfig
                 # Runner name for identification
                 - name: RUNNER_NAME
                   value: ${schema.spec.runnerName}
