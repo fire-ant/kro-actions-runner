@@ -78,7 +78,7 @@ kubectl get instances -n arc-runners
 
 ## Architecture
 
-```
+```text
 ARC Orchestrator Pod (kro-actions-runner)
     ↓ (creates JIT secret)
     ↓

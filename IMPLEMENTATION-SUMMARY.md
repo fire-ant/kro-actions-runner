@@ -39,7 +39,7 @@ Created comprehensive examples and documentation:
 
 ### 5. **Docker Image** ✅
 Successfully built and verified:
-```
+```text
 IMAGE                       DISK USAGE   CONTENT SIZE
 kro-actions-runner:latest   54.3MB       16.4MB
 ```
@@ -50,7 +50,7 @@ kro-actions-runner:latest   54.3MB       16.4MB
 
 ### How It Works
 
-```
+```text
 GitHub Job → ARC (upstream) → Pod with kro-actions-runner
                                     ↓
                   Discovers RGD by scale-set-name label
@@ -242,7 +242,7 @@ kubectl logs test-runner -f
 
 ### Immediate
 
-1. **Test with real GitHub repo**: Configure GitHub App/PAT and test end-to-end
+1. **Test with real GitHub repository**: Configure GitHub App/PAT and test end-to-end
 2. **Create additional RGDs**:
    - EC2Runner for AWS instances
    - GCERunner for Google Cloud VMs
