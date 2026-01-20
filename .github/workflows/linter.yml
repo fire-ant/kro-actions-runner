@@ -64,7 +64,7 @@ jobs:
           VALIDATE_PRE_COMMIT: false
           SAVE_SUPER_LINTER_OUTPUT: true
           KUBERNETES_KUBECONFORM_OPTIONS: "-ignore-missing-schemas"
-          DEFAULT_BRANCH: ${{ github.head_ref || github.ref_name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch || 'master' }}
       - uses: technote-space/get-diff-action@f27caffdd0fb9b13f4fc191c016bb4e0632844af # 6.1.2
         id: git-diff
         if: failure()
