@@ -59,9 +59,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LINTER_RULES_PATH: /
-          # Only validate Go, Bash, and YAML
+          # Only validate Bash and YAML (Go linting handled by golangci-lint in build workflow)
+          # When specifying VALIDATE_* true settings, all other linters are automatically disabled
           VALIDATE_ALL_CODEBASE: false
-          VALIDATE_GO: true
           VALIDATE_BASH: true
           VALIDATE_BASH_EXEC: true
           VALIDATE_YAML: true
