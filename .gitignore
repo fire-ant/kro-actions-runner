@@ -1,0 +1,36 @@
+# Binaries
+bin/
+kar
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Go
+*.test
+*.out
+go.work
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node.js (for tooling)
+package*.json
+node_modules/
+dictionary.dic
+
+# Secrets and local configs
+*-local.yaml
+*-local.yml
+*.key
+*.pem
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db

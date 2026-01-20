@@ -1,0 +1,74 @@
+# Example Helm values for deploying ARC runner scale set with kro-actions-runner
+#
+# Usage:
+#   helm upgrade --install --namespace arc-runners --create-namespace \
+#     --values arc-scale-set-values.yaml \
+#     my-runners \
+#     oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
+
+# GitHub configuration
+githubConfigUrl: https://github.com/your-org/your-repo
+githubConfigSecret: github-token-secret  # Pre-create this secret
+
+# Runner template - uses kro-actions-runner image
+template:
+  spec:
+    # Optional: Use specific service account with KRO permissions
+    # serviceAccountName: kro-runner
+
+    containers:
+      - name: runner
+        # Replace with your kro-actions-runner image
+        image: kro-actions-runner:latest
+        imagePullPolicy: IfNotPresent
+
+        # Remove default command to use entrypoint from image
+        command: []
+
+        env:
+          # Scale set name for RGD discovery
+          # This must match the label on your RGD:
+          #   actions.github.com/scale-set-name: "default"
+          - name: ACTIONS_RUNNER_SCALE_SET_NAME
+            value: "default"
+
+          # Runner name from Pod metadata
+          - name: RUNNER_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+
+          # JIT config (provided automatically by ARC)
+          - name: ACTIONS_RUNNER_INPUT_JITCONFIG
+            valueFrom:
+              secretKeyRef:
+                name: $(RUNNER_NAME)
+                key: .jitconfig
+
+          # Optional: Enable KRO mode explicitly (default is true)
+          - name: USE_KRO
+            value: "true"
+
+          # Optional: Cleanup timeout
+          - name: KAR_CLEANUP_TIMEOUT
+            value: "10m"
+
+        # Resource limits for the runner Pod itself
+        # The actual compute resources depend on your RGD
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+
+# Scaling configuration
+minRunners: 0
+maxRunners: 10
+
+# Runner group (optional)
+# runnerGroup: "default"
+
+# Labels for runner selection in workflows
+# runnerScaleSetName: "my-runners"

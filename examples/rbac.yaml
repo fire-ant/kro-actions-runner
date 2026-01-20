@@ -1,0 +1,81 @@
+# RBAC permissions for kro-actions-runner
+#
+# Apply these before deploying your runner scale set:
+#   kubectl apply -f rbac.yaml -n arc-runners
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kro-runner
+  namespace: arc-runners
+
+---
+# Role for managing Secrets (JIT config)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kro-runner-secrets
+  namespace: arc-runners
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create", "get", "delete", "list"]
+
+---
+# ClusterRole for KRO resource management
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kro-runner
+rules:
+  # Read ResourceGraphDefinitions to discover runner types
+  - apiGroups: ["kro.run"]
+    resources: ["resourcegraphdefinitions"]
+    verbs: ["get", "list", "watch"]
+
+  # Manage ResourceGraph instances (dynamic kinds like PodRunner, VMRunner)
+  - apiGroups: ["kro.run"]
+    resources: ["*"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+
+  # For VM-based runners (if using KubeVirt)
+  - apiGroups: ["kubevirt.io"]
+    resources: ["virtualmachineinstances", "virtualmachines"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+
+  # For cloud-based runners (if using AWS Controllers for Kubernetes)
+  - apiGroups: ["ec2.services.k8s.aws"]
+    resources: ["instances"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+
+---
+# Bind the Role for Secrets
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kro-runner-secrets
+  namespace: arc-runners
+subjects:
+  - kind: ServiceAccount
+    name: kro-runner
+    namespace: arc-runners
+roleRef:
+  kind: Role
+  name: kro-runner-secrets
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Bind the ClusterRole for KRO
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kro-runner
+subjects:
+  - kind: ServiceAccount
+    name: kro-runner
+    namespace: arc-runners
+roleRef:
+  kind: ClusterRole
+  name: kro-runner
+  apiGroup: rbac.authorization.k8s.io

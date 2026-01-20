@@ -1,0 +1,19 @@
+# Test ACK EC2 controller with LocalStack
+# This creates a simple VPC to verify ACK can talk to LocalStack
+
+---
+apiVersion: ec2.services.k8s.aws/v1alpha1
+kind: VPC
+metadata:
+  name: test-vpc
+  namespace: arc-runners
+spec:
+  cidrBlocks:
+    - 10.0.0.0/16
+  enableDNSHostnames: true
+  enableDNSSupport: true
+  tags:
+    - key: Name
+      value: test-vpc
+    - key: Purpose
+      value: ack-localstack-test

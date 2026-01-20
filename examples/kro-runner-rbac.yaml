@@ -1,0 +1,84 @@
+# RBAC for kro-actions-runner
+# This defines the permissions needed for the orchestrator pods to:
+# 1. Discover ResourceGraphDefinitions (cluster-scoped)
+# 2. Create and manage ResourceGraph instances (namespace-scoped)
+# 3. Access JIT config secrets created by ARC (namespace-scoped)
+#
+# Usage:
+#   kubectl apply -f kro-runner-rbac.yaml -n <namespace>
+#
+# Note: The ClusterRole and ClusterRoleBinding are cluster-scoped,
+# but the ServiceAccount, Role, and RoleBinding are namespace-scoped
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kro-runner
+  # namespace: will be set by kubectl -n flag or kustomize
+
+---
+# Namespace-scoped Role for ResourceGraphs, Secrets, and Pods
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kro-runner
+  # namespace: will be set by kubectl -n flag or kustomize
+rules:
+  # KRO ResourceGraph instance management (namespace-scoped)
+  - apiGroups: ["kro.run"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Secret access for JIT config (created by ARC)
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+
+  # Pod access for owner references
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kro-runner
+  # namespace: will be set by kubectl -n flag or kustomize
+subjects:
+  - kind: ServiceAccount
+    name: kro-runner
+    # namespace: must match the ServiceAccount namespace
+roleRef:
+  kind: Role
+  name: kro-runner
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Cluster-scoped ClusterRole for listing ResourceGraphDefinitions
+# RGDs are cluster-scoped resources, so we need cluster-level permissions
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kro-runner-cluster
+rules:
+  # RGD discovery - needed to find the appropriate RGD by label
+  - apiGroups: ["kro.run"]
+    resources: ["resourcegraphdefinitions"]
+    verbs: ["get", "list", "watch"]
+
+---
+# Cluster-scoped binding that grants the ServiceAccount cluster-level permissions
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kro-runner-cluster
+subjects:
+  - kind: ServiceAccount
+    name: kro-runner
+    namespace: arc-runners  # IMPORTANT: Update this to match your runner namespace
+roleRef:
+  kind: ClusterRole
+  name: kro-runner-cluster
+  apiGroup: rbac.authorization.k8s.io
