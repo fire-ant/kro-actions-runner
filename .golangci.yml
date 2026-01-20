@@ -11,6 +11,9 @@ linters:
   default: all
   disable:
     - exhaustruct
+    - wsl # Deprecated - use wsl_v5 if needed
+  enable:
+    - wsl_v5
   settings:
     depguard:
       rules:
