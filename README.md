@@ -36,12 +36,11 @@ GitHub Job → ARC (upstream) → Pod with kro-actions-runner image
 
 The JIT config secret is handled securely:
 
-1. **ARC creates the JIT secret** with the GitHub runner token
-2. **kro-actions-runner reads it from environment**: `ACTIONS_RUNNER_INPUT_JITCONFIG`
-3. **Creates a Kubernetes Secret** with the JIT config
-4. **ResourceGraph spec contains only the SECRET NAME** (not the token)
-5. **RGD template uses `secretRef`** to reference the secret
-6. **Kubernetes injects the secret** into the actual runner Pod/VM
+1. **ARC creates the JIT secret** with the GitHub runner token (secret name matches runner name)
+2. **kro-actions-runner creates ResourceGraph** with only the runner name in the spec
+3. **ResourceGraph spec contains NO secrets** - only references the runner name
+4. **RGD template uses `secretRef`** to reference the ARC-created secret
+5. **Kubernetes injects the secret** into the actual runner Pod/VM
 
 **No tokens are exposed in:**
 - ResourceGraph specs
