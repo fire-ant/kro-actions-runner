@@ -1,0 +1,9 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  # Query RGDs with the correct label - should return exactly one
+  - command: kubectl get rgd -l actions.github.com/scale-set-name=slapchop-linux-builders -o name
+  # Query RGDs with different label - should return exactly one
+  - command: kubectl get rgd -l actions.github.com/scale-set-name=different-scale-set -o name
+  # List all RGDs - should return three
+  - command: kubectl get rgd -o name

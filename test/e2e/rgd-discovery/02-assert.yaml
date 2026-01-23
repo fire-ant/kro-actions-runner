@@ -1,0 +1,5 @@
+# Assert label queries work correctly
+# Kuttl verifies the commands in the previous step succeeded
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 30

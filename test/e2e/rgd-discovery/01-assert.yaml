@@ -1,0 +1,26 @@
+# Assert all RGDs are created
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 30
+---
+# RGD with correct label
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: pod-runner
+  labels:
+    actions.github.com/scale-set-name: "slapchop-linux-builders"
+---
+# RGD with different label
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: pod-runner-different-label
+  labels:
+    actions.github.com/scale-set-name: "different-scale-set"
+---
+# RGD with no label
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: pod-runner-no-label

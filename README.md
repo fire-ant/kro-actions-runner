@@ -90,12 +90,26 @@ curl https://mise.run | sh
 
 Run tasks using `mise run <task>`:
 
-- `mise run test` - Run Go tests
+**Development:**
+- `mise run test` - Run Go unit tests
 - `mise run fmt` - Format all code files
 - `mise run lint` - Run all linters
 - `mise run build` - Build the kar binary
 - `mise run check` - Run all checks (format, lint, test)
 - `mise run setup` - Set up development environment
+
+**Integration Testing:**
+- `mise run test:e2e` - Run all end-to-end integration tests
+- `mise run test:e2e:pod-runner` - Run only pod-runner test
+- `mise run test:all` - Run both unit and integration tests
+
+**Cluster Management:**
+- `mise run cluster:create` - Create Kind test cluster
+- `mise run cluster:setup` - Install KRO and ARC
+- `mise run cluster:status` - Show cluster status
+- `mise run cluster:logs` - Show component logs
+- `mise run cluster:reset` - Reset cluster from scratch
+- `mise run cluster:delete` - Delete test cluster
 
 **List all available tasks:**
 ```bash
@@ -115,15 +129,24 @@ make lint   # Same as: mise run lint
 
 All tool versions are managed in `mise.toml`. This ensures every developer uses the same versions:
 
+**Language Runtimes:**
 - Go 1.25.0
 - Node.js 22 (LTS)
 - Python 3.12
 - Ruby 3.3
+
+**Development Tools:**
 - golangci-lint (latest)
 - shfmt (latest)
 - yamlfmt 0.20.0
 - shellcheck 0.11.0.1
 - prettier (latest)
+
+**Kubernetes & Testing:**
+- kubectl (latest)
+- kind (latest)
+- helm (latest)
+- kuttl (latest)
 
 For more information, see [CONTRIBUTING.md](CONTRIBUTING.md) and [.github/docs/CI-TOOL-VERSIONS.md](.github/docs/CI-TOOL-VERSIONS.md).
 
@@ -332,7 +355,39 @@ make docker-build
 
 ## Testing
 
-### Test RGD Discovery
+### Unit Tests
+
+Run Go unit tests:
+
+```bash
+mise run test
+```
+
+### Integration Tests
+
+Automated end-to-end tests using [kuttl](https://kuttl.dev/) and Kind clusters:
+
+```bash
+# Run all integration tests
+mise run test:e2e
+
+# Run specific test case
+mise run test:e2e:pod-runner
+
+# Run unit and integration tests
+mise run test:all
+```
+
+**Test Coverage:**
+1. **Pod Runner Flow** - Complete pod-runner provisioning lifecycle
+2. **RGD Discovery** - Label-based ResourceGraphDefinition selection
+3. **RBAC Validation** - Service account permissions verification
+
+For detailed documentation, debugging tips, and test development, see [test/README.md](test/README.md).
+
+### Manual Testing
+
+Test RGD discovery manually:
 
 ```bash
 # Create a test RGD

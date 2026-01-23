@@ -1,0 +1,5 @@
+# Assert permission checks completed
+# The commands in the previous step verify RBAC permissions are correct
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 30

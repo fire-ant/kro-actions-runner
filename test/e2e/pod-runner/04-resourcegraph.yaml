@@ -1,0 +1,8 @@
+# Create a ResourceGraph instance to trigger pod creation
+apiVersion: v1alpha1
+kind: PodRunner
+metadata:
+  name: test-runner-001
+  namespace: arc-runners
+spec:
+  runnerName: test-runner-jit

@@ -1,0 +1,7 @@
+# Assert namespace exists
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: arc-runners
+status:
+  phase: Active
