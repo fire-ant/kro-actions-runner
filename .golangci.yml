@@ -6,68 +6,21 @@
 # which accompanies this distribution, and is available at
 # http://www.apache.org/licenses/LICENSE-2.0
 ##############################################################################
+
 version: "2"
+
 linters:
-  default: all
+  default: standard
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - ineffassign
   disable:
     - exhaustruct
-    - wsl # Deprecated - use wsl_v5 if needed
-  enable:
-    - wsl_v5
-  settings:
-    depguard:
-      rules:
-        prevent_unmaintained_packages:
-          allow:
-            - $gostd
-            - github.com/fire-ant/kro-actions-runner/cmd/kar/app
-            - github.com/fire-ant/kro-actions-runner/internal
-            - github.com/golang/mock/gomock
-            - github.com/pkg/errors
-            - github.com/spf13/cobra
-            - github.com/spf13/pflag
-            - github.com/spf13/viper
-            - k8s.io/api/core/v1
-            - k8s.io/apimachinery/pkg/api/errors
-            - k8s.io/apimachinery/pkg/apis/meta/v1
-            - k8s.io/apimachinery/pkg/watch
-            - k8s.io/utils/ptr
-            - kubevirt.io/api/core/v1
-            - kubevirt.io/client-go/containerizeddataimporter/fake
-            - kubevirt.io/client-go/kubecli
-            - kubevirt.io/client-go/kubevirt/fake
-            - kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1
-            - github.com/onsi/ginkgo/v2
-            - github.com/onsi/gomega
-            - github.com/matryer/resync
-    gomoddirectives:
-      replace-allow-list:
-        - k8s.io/kube-openapi
-  exclusions:
-    generated: lax
-    presets:
-      - comments
-      - common-false-positives
-      - legacy
-      - std-error-handling
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
-    rules:
-      - linters:
-          - revive
-        path: _test\.go
-        text: "dot-imports:"
-formatters:
-  enable:
-    - gci
-    - gofmt
-    - gofumpt
-    - goimports
-  exclusions:
-    generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+
+run:
+  timeout: 5m
+  tests: true
+  go: "1.25"

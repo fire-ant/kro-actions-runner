@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -202,10 +201,10 @@ func (r *KRORunner) CreateResources(ctx context.Context, runnerName string, jitC
 
 	// Set metadata annotation with runner info
 	metadata := map[string]interface{}{
-		"runnerName":        runnerName,
-		"scaleSetName":      r.scaleSetName,
-		"jitConfigSecret":   runnerName, // ARC creates secret with same name as runner
-		"createdTimestamp":  time.Now().Format(time.RFC3339),
+		"runnerName":       runnerName,
+		"scaleSetName":     r.scaleSetName,
+		"jitConfigSecret":  runnerName, // ARC creates secret with same name as runner
+		"createdTimestamp": time.Now().Format(time.RFC3339),
 	}
 	metadataJSON, _ := json.Marshal(metadata)
 
@@ -333,10 +332,11 @@ func (r *KRORunner) WaitForResourceGraph(ctx context.Context) error {
 							podStatus, found, err := unstructured.NestedMap(rg.Object, "status", "resources", "runnerPod", "status")
 							if err == nil && found {
 								phase, _ := podStatus["phase"].(string)
-								if phase == "Succeeded" {
+								switch phase {
+								case "Succeeded":
 									log.Printf("Runner pod completed successfully")
 									return nil
-								} else if phase == "Failed" {
+								case "Failed":
 									log.Printf("Runner pod failed")
 									return ErrRunnerFailed
 								}
@@ -413,30 +413,6 @@ func (r *KRORunner) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
-// createJitSecret creates a Kubernetes Secret with the JIT config
-func (r *KRORunner) createJitSecret(ctx context.Context, secretName, runnerName, jitConfig string) error {
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
-			Namespace: r.namespace,
-			Labels: map[string]string{
-				"actions.github.com/scale-set-name": r.scaleSetName,
-				"kro.run/runner-name":               runnerName,
-			},
-		},
-		Type: corev1.SecretTypeOpaque,
-		StringData: map[string]string{
-			".jitconfig": jitConfig,
-		},
-	}
-
-	_, err := r.kubeClient.CoreV1().Secrets(r.namespace).Create(ctx, secret, metav1.CreateOptions{})
-	if err != nil {
-		return errors.Wrap(err, "failed to create secret")
-	}
-
-	return nil
-}
 
 // toResourceName converts Kind to resource name (PodRunner -> podrunners)
 func toResourceName(kind string) string {

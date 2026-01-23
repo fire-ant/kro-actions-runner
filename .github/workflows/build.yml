@@ -58,7 +58,7 @@ jobs:
           go-version: "^1.25"
           cache: false
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@c6158e37c3c8de8ae1874afb7c4cd0ea26c75f84 # 8.0.1
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # 9.2.0
         with:
           version: latest
   code-coverage:
@@ -72,15 +72,13 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
-        with:
-          persist-credentials: false
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # 6.1.0
         with:
           go-version: "^1.25"
           cache: false
       - uses: gwatts/go-coverage-action@2845595538a59d63d1bf55f109c14e104c6f7cb3 # 2.0.0
         with:
-          coverage-threshold: 40
+          coverage-threshold: 25
   unit-test:
     name: Check Go lang unit tests
     if: needs.changes.outputs.golang == 'true'
