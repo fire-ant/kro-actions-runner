@@ -55,6 +55,78 @@ The JIT config secret is handled securely:
 - [Actions Runner Controller (ARC)](https://github.com/actions/actions-runner-controller) installed
 - Optional: KubeVirt (for VM runners)
 
+## Development Setup
+
+This project uses [mise](https://mise.jdx.dev) for tool version management and task running.
+
+### Installing mise
+
+**macOS (Homebrew):**
+```bash
+brew install mise
+```
+
+**Linux/macOS (curl):**
+```bash
+curl https://mise.run | sh
+```
+
+**Other installation methods:** See [mise installation docs](https://mise.jdx.dev/getting-started.html)
+
+### Quick Start
+
+1. **Install all development tools:**
+   ```bash
+   mise install
+   ```
+
+2. **Set up your development environment:**
+   ```bash
+   mise run setup
+   ```
+   This will install Node.js dependencies (prettier) and pre-commit hooks.
+
+### Available Tasks
+
+Run tasks using `mise run <task>`:
+
+- `mise run test` - Run Go tests
+- `mise run fmt` - Format all code files
+- `mise run lint` - Run all linters
+- `mise run build` - Build the kar binary
+- `mise run check` - Run all checks (format, lint, test)
+- `mise run setup` - Set up development environment
+
+**List all available tasks:**
+```bash
+mise tasks
+```
+
+### Backward Compatibility
+
+The existing `Makefile` is still available as a wrapper around mise:
+```bash
+make test   # Same as: mise run test
+make fmt    # Same as: mise run fmt
+make lint   # Same as: mise run lint
+```
+
+### Tool Versions
+
+All tool versions are managed in `mise.toml`. This ensures every developer uses the same versions:
+
+- Go 1.25.0
+- Node.js 22 (LTS)
+- Python 3.12
+- Ruby 3.3
+- golangci-lint (latest)
+- shfmt (latest)
+- yamlfmt 0.20.0
+- shellcheck 0.11.0.1
+- prettier (latest)
+
+For more information, see [CONTRIBUTING.md](CONTRIBUTING.md) and [.github/docs/CI-TOOL-VERSIONS.md](.github/docs/CI-TOOL-VERSIONS.md).
+
 ## Quick Start
 
 ### 1. Install KRO
