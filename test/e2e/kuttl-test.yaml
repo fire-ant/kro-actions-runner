@@ -16,19 +16,19 @@ kindNodeCache: true
 # Kind cluster context name
 kindContext: kro-test
 # Kind cluster configuration
-kindConfig: ../fixtures/kind/kind-config.yaml
+kindConfig: test/fixtures/kind/kind-config.yaml
 # Default namespace for tests
 namespace: arc-runners
 # Commands to run before tests (setup cluster)
 commands:
-  - command: ../scripts/install-kro.sh
+  - command: test/scripts/install-kro.sh
     ignoreFailure: false
-  - command: ../scripts/install-arc.sh
+  - command: test/scripts/install-arc.sh
     ignoreFailure: false
-  - command: ../scripts/load-image.sh
+  - command: test/scripts/load-image.sh
     ignoreFailure: false
 # Test directories to run
 testDirs:
-  - ./pod-runner/
-  - ./rgd-discovery/
-  - ./rbac-validation/
+  - test/e2e/pod-runner/
+  - test/e2e/rgd-discovery/
+  - test/e2e/rbac-validation/

@@ -49,11 +49,14 @@ Run only the pod-runner test:
 mise run test:e2e:pod-runner
 ```
 
-Run kuttl directly with custom options:
+Run kuttl directly with custom options (from project root):
 
 ```bash
+# Run from project root directory
 kubectl kuttl test --config test/e2e/kuttl-test.yaml --test pod-runner
 ```
+
+**Note:** All kuttl commands must be run from the project root directory, as test paths are configured relative to the project root.
 
 ## Cluster Management
 
