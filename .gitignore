@@ -19,7 +19,8 @@ go.work
 *~
 
 # Node.js (for tooling)
-package*.json
+# Note: package.json is tracked for mise/prettier version management
+package-lock.json
 node_modules/
 dictionary.dic
 

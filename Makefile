@@ -1,34 +1,71 @@
 # SPDX-license-identifier: Apache-2.0
 ##############################################################################
-# Copyright (c) 2024
+# Copyright (c) 2025
 # All rights reserved. This program and the accompanying materials
 # are made available under the terms of the Apache License, Version 2.0
 # which accompanies this distribution, and is available at
 # http://www.apache.org/licenses/LICENSE-2.0
 ##############################################################################
 
-DOCKER_CMD ?= $(shell which docker 2> /dev/null || which podman 2> /dev/null || echo docker)
+# This Makefile is a backward-compatible wrapper around mise
+# All tasks are now defined in mise.toml
+#
+# DEPRECATION NOTICE: Consider using `mise run <task>` directly
+# - `make test` -> `mise run test`
+# - `make fmt` -> `mise run fmt`
+# - `make lint` -> `mise run lint`
+#
+# Setup: mise install && mise run setup
+# See available tasks: mise tasks
 
+# Check if mise is installed
+MISE := $(shell command -v mise 2> /dev/null)
+
+ifndef MISE
+$(error mise is not installed. Install it from https://mise.jdx.dev/getting-started.html)
+endif
+
+.PHONY: test
 test:
-	@go test -v ./...
+	@mise run test
 
 .PHONY: lint
 lint:
-	sudo -E $(DOCKER_CMD) run --rm -v $$(pwd):/tmp/lint \
-	-e RUN_LOCAL=true \
-	-e LINTER_RULES_PATH=/ \
-	-e KUBERNETES_KUBECONFORM_OPTIONS='-ignore-missing-schemas' \
-	-e VALIDATE_GO_MODULES=false \
-	-e VALIDATE_GO=false \
-	-e VALIDATE_BIOME_FORMAT=false \
-	ghcr.io/super-linter/super-linter
+	@mise run lint
 
 .PHONY: fmt
 fmt:
-	@go fmt ./...
-	command -v shfmt > /dev/null || curl -s "https://i.jpillora.com/mvdan/sh!!?as=shfmt" | bash
-	shfmt -l -w -s -i 4 .
-	command -v yamlfmt > /dev/null || curl -s "https://i.jpillora.com/google/yamlfmt!!" | bash
-	yamlfmt -dstar **/*.{yaml,yml}
-	command -v prettier > /dev/null || npm install prettier
-	npx prettier . --write
+	@mise run fmt
+
+.PHONY: build
+build:
+	@mise run build
+
+.PHONY: clean
+clean:
+	@mise run clean
+
+.PHONY: check
+check:
+	@mise run check
+
+.PHONY: setup
+setup:
+	@mise run setup
+
+.PHONY: help
+help:
+	@echo "Makefile wrapper for mise tasks"
+	@echo ""
+	@echo "Available targets:"
+	@echo "  make test    - Run Go tests"
+	@echo "  make fmt     - Format all code files"
+	@echo "  make lint    - Run all linters"
+	@echo "  make build   - Build the kar binary"
+	@echo "  make clean   - Clean build artifacts"
+	@echo "  make check   - Run all checks (fmt, lint, test)"
+	@echo "  make setup   - Set up development environment"
+	@echo ""
+	@echo "For more details, see: mise tasks"
+	@echo ""
+	@echo "DEPRECATION NOTICE: Consider using 'mise run <task>' directly"
