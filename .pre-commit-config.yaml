@@ -30,13 +30,6 @@ repos:
         args: ["-v", "-iE006", "-iE005,E042,E043"]
         files: .*\.sh
         exclude: ".tox/.*"
-  - repo: https://github.com/markdownlint/markdownlint
-    rev: v0.15.0
-    hooks:
-      - id: markdownlint
-        # MD013: line length
-        args: ["-r", "~MD013"]
-        files: \.(md|mdown|markdown)$
   - repo: https://github.com/google/yamlfmt
     rev: v0.20.0
     hooks:

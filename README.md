@@ -131,16 +131,13 @@ All tool versions are managed in `mise.toml`. This ensures every developer uses 
 
 **Language Runtimes:**
 - Go 1.25.0
-- Node.js 22 (LTS)
-- Python 3.12
-- Ruby 3.3
+- Python 3.12 (for pre-commit and yamllint)
 
 **Development Tools:**
 - golangci-lint (latest)
 - shfmt (latest)
 - yamlfmt 0.20.0
 - shellcheck 0.11.0.1
-- prettier (latest)
 
 **Kubernetes & Testing:**
 - kubectl (latest)
