@@ -1,0 +1,1 @@
+{"go-coverage-action-fmt":1,"coverage_pct":26.905829596412556,"pkg_stats":{"github.com/fire-ant/kro-actions-runner/cmd/kar/app":[91.42857142857143],"github.com/fire-ant/kro-actions-runner/cmd/kar":[25.454545454545453],"github.com/fire-ant/kro-actions-runner/internal":[10.526315789473683]},"skipped_count":0}
