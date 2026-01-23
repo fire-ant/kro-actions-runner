@@ -26,9 +26,20 @@ yamlfmt = "0.20.0"
 shellcheck = "0.11.0.1"
 "npm:prettier" = "latest"    # Installed via npm, but also in package.json for version locking
 
+# Kubernetes and testing tools
+kubectl = "latest"
+kind = "latest"
+helm = "latest"
+kuttl = "latest"
+
 [env]
-# Auto-detect docker or podman
-DOCKER_CMD = "{{ if exec('which docker') }}docker{{ else if exec('which podman') }}podman{{ else }}docker{{ end }}"
+# Docker command (defaults to docker, set to podman if needed)
+DOCKER_CMD = "docker"
+
+# Kubernetes testing configuration
+KIND_CLUSTER_NAME = "kro-test"
+KUTTL_NAMESPACE = "arc-runners"
+CONTROLLER_NS = "arc-systems"
 
 [tasks.test]
 description = "Run Go tests"
@@ -73,4 +84,75 @@ description = "Set up development environment (install tools and hooks)"
 run = [
     "npm install",           # Install Node.js dependencies (prettier)
     "mise run install-hooks" # Install pre-commit hooks
+]
+
+# Cluster management tasks
+[tasks."cluster:create"]
+description = "Create kind cluster for testing"
+run = [
+    "kind create cluster --name ${KIND_CLUSTER_NAME} --config test/fixtures/kind/kind-config.yaml",
+    "kubectl cluster-info --context kind-${KIND_CLUSTER_NAME}"
+]
+
+[tasks."cluster:delete"]
+description = "Delete kind cluster"
+run = "kind delete cluster --name ${KIND_CLUSTER_NAME}"
+
+[tasks."cluster:setup"]
+description = "Set up cluster with KRO, ARC, and prerequisites"
+depends = ["cluster:create"]
+run = [
+    "test/scripts/install-kro.sh",
+    "test/scripts/install-arc.sh",
+    "test/scripts/load-image.sh"
+]
+
+[tasks."cluster:reset"]
+description = "Delete and recreate cluster from scratch"
+run = [
+    "mise run cluster:delete || true",
+    "mise run cluster:setup"
+]
+
+[tasks."cluster:logs"]
+description = "Show logs for key components"
+run = [
+    "echo '=== KRO Logs ==='",
+    "kubectl logs -n kro-system -l app=kro --tail=50 || echo 'KRO logs not available'",
+    "echo '=== ARC Logs ==='",
+    "kubectl logs -n ${CONTROLLER_NS} -l app.kubernetes.io/name=gha-runner-scale-set-controller --tail=50 || echo 'ARC logs not available'"
+]
+
+[tasks."cluster:status"]
+description = "Show cluster status"
+run = [
+    "kubectl get nodes",
+    "kubectl get pods -n kro-system",
+    "kubectl get pods -n ${CONTROLLER_NS}",
+    "kubectl get rgd",
+    "kubectl get resourcegraphs -A"
+]
+
+# Integration testing tasks
+[tasks."test:e2e"]
+description = "Run end-to-end kuttl tests"
+run = [
+    "mise run build",
+    "${DOCKER_CMD} build -t kro-actions-runner:latest .",
+    "kubectl kuttl test --config test/e2e/kuttl-test.yaml"
+]
+
+[tasks."test:e2e:pod-runner"]
+description = "Run only pod-runner test case"
+run = [
+    "mise run build",
+    "${DOCKER_CMD} build -t kro-actions-runner:latest .",
+    "kubectl kuttl test --config test/e2e/kuttl-test.yaml --test pod-runner"
+]
+
+[tasks."test:all"]
+description = "Run unit and integration tests"
+run = [
+    "mise run test",
+    "mise run test:e2e"
 ]

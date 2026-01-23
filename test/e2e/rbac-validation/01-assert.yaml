@@ -1,0 +1,67 @@
+# Assert all RBAC resources are created correctly
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 30
+---
+# ServiceAccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kro-runner
+  namespace: arc-runners
+---
+# Namespace-scoped Role
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kro-runner
+  namespace: arc-runners
+rules:
+  - apiGroups: ["kro.run"]
+    resources: ["resourcegraphs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+# RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kro-runner
+  namespace: arc-runners
+subjects:
+  - kind: ServiceAccount
+    name: kro-runner
+    namespace: arc-runners
+roleRef:
+  kind: Role
+  name: kro-runner
+  apiGroup: rbac.authorization.k8s.io
+---
+# Cluster-scoped ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kro-runner-cluster
+rules:
+  - apiGroups: ["kro.run"]
+    resources: ["resourcegraphdefinitions"]
+    verbs: ["get", "list", "watch"]
+---
+# ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kro-runner-cluster
+subjects:
+  - kind: ServiceAccount
+    name: kro-runner
+    namespace: arc-runners
+roleRef:
+  kind: ClusterRole
+  name: kro-runner-cluster
+  apiGroup: rbac.authorization.k8s.io

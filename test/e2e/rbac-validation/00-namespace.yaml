@@ -1,0 +1,5 @@
+# Step 0: Create namespace for RBAC test
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: arc-runners

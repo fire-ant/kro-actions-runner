@@ -1,0 +1,11 @@
+# Assert secret exists
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 30
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-runner-jit
+  namespace: arc-runners
+type: Opaque

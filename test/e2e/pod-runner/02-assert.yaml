@@ -1,0 +1,11 @@
+# Assert RGD is created with correct labels
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 30
+---
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: pod-runner
+  labels:
+    actions.github.com/scale-set-name: "slapchop-linux-builders"

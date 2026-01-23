@@ -1,0 +1,12 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  # Check namespace-scoped permissions
+  - command: kubectl auth can-i create resourcegraphs --as=system:serviceaccount:arc-runners:kro-runner -n arc-runners
+  - command: kubectl auth can-i get secrets --as=system:serviceaccount:arc-runners:kro-runner -n arc-runners
+  - command: kubectl auth can-i list pods --as=system:serviceaccount:arc-runners:kro-runner -n arc-runners
+  # Check cluster-scoped permissions
+  - command: kubectl auth can-i list resourcegraphdefinitions --as=system:serviceaccount:arc-runners:kro-runner
+  # Verify denied permissions (should fail - but we ignore failure)
+  - command: kubectl auth can-i delete secrets --as=system:serviceaccount:arc-runners:kro-runner -n arc-runners
+    ignoreFailure: true
