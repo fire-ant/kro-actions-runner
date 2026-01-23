@@ -7,7 +7,6 @@
 # http://www.apache.org/licenses/LICENSE-2.0
 ##############################################################################
 name: Create and publish Docker image
-# yamllint disable-line rule:truthy
 on:
   workflow_dispatch:
   push:
@@ -43,6 +42,25 @@ jobs:
           filters: |
             golang:
               - '**.go'
+  golangci-lint:
+    name: Run golangci-lint
+    if: needs.changes.outputs.golang == 'true'
+    needs: changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # 6.1.0
+        with:
+          go-version: "^1.25"
+          cache: false
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@c6158e37c3c8de8ae1874afb7c4cd0ea26c75f84 # 8.0.1
+        with:
+          version: latest
   code-coverage:
     name: Check code coverage
     if: needs.changes.outputs.golang == 'true'
@@ -98,7 +116,7 @@ jobs:
       contents: read
       attestations: write
       id-token: write
-    needs: [code-coverage, unit-test]
+    needs: [golangci-lint, code-coverage, unit-test]
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
         with:
