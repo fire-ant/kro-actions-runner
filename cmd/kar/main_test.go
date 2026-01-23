@@ -66,11 +66,11 @@ func TestGetCleanupTimeout(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set environment variable
 			if tt.envValue != "" {
-				os.Setenv("KAR_CLEANUP_TIMEOUT", tt.envValue)
+				_ = os.Setenv("KAR_CLEANUP_TIMEOUT", tt.envValue)
 			} else {
-				os.Unsetenv("KAR_CLEANUP_TIMEOUT")
+				_ = os.Unsetenv("KAR_CLEANUP_TIMEOUT")
 			}
-			defer os.Unsetenv("KAR_CLEANUP_TIMEOUT")
+			defer func() { _ = os.Unsetenv("KAR_CLEANUP_TIMEOUT") }()
 
 			result := getCleanupTimeout()
 			if result != tt.expected {

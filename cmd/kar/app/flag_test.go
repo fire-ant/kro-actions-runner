@@ -117,7 +117,7 @@ func TestBindFlags(t *testing.T) {
 
 			// Set flag as changed if needed
 			if tt.flagChanged {
-				cmd.Flags().Set(tt.flagName, tt.flagValue)
+				_ = cmd.Flags().Set(tt.flagName, tt.flagValue)
 			}
 
 			// Create viper instance and set value
@@ -147,8 +147,8 @@ func TestBindFlagsWithEnvVar(t *testing.T) {
 	// Set environment variable
 	envKey := "TEST_FLAG"
 	envValue := "env-value"
-	os.Setenv(envKey, envValue)
-	defer os.Unsetenv(envKey)
+	_ = os.Setenv(envKey, envValue)
+	defer func() { _ = os.Unsetenv(envKey) }()
 
 	cmd := &cobra.Command{
 		Use: "test",
@@ -160,7 +160,7 @@ func TestBindFlagsWithEnvVar(t *testing.T) {
 	// Create viper instance with env support (matching initializeConfig behavior)
 	v := viper.New()
 	v.AutomaticEnv()
-	v.BindEnv("test-flag", envKey)
+	_ = v.BindEnv("test-flag", envKey)
 
 	// Bind flags
 	bindFlags(cmd, v)
