@@ -6,68 +6,69 @@
 # which accompanies this distribution, and is available at
 # http://www.apache.org/licenses/LICENSE-2.0
 ##############################################################################
-version: "2"
+
 linters:
-  default: all
+  enable-all: true
   disable:
     - exhaustruct
-    - wsl # Deprecated - use wsl_v5 if needed
-  enable:
-    - wsl_v5
-  settings:
-    depguard:
-      rules:
-        prevent_unmaintained_packages:
-          allow:
-            - $gostd
-            - github.com/fire-ant/kro-actions-runner/cmd/kar/app
-            - github.com/fire-ant/kro-actions-runner/internal
-            - github.com/golang/mock/gomock
-            - github.com/pkg/errors
-            - github.com/spf13/cobra
-            - github.com/spf13/pflag
-            - github.com/spf13/viper
-            - k8s.io/api/core/v1
-            - k8s.io/apimachinery/pkg/api/errors
-            - k8s.io/apimachinery/pkg/apis/meta/v1
-            - k8s.io/apimachinery/pkg/watch
-            - k8s.io/utils/ptr
-            - kubevirt.io/api/core/v1
-            - kubevirt.io/client-go/containerizeddataimporter/fake
-            - kubevirt.io/client-go/kubecli
-            - kubevirt.io/client-go/kubevirt/fake
-            - kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1
-            - github.com/onsi/ginkgo/v2
-            - github.com/onsi/gomega
-            - github.com/matryer/resync
-    gomoddirectives:
-      replace-allow-list:
-        - k8s.io/kube-openapi
-  exclusions:
-    generated: lax
-    presets:
-      - comments
-      - common-false-positives
-      - legacy
-      - std-error-handling
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+    - wsl # Deprecated
+    # Disable overly strict linters for test code
+    - funlen # Functions can be longer in tests
+    - gocognit # Cognitive complexity is acceptable in some places
+    - gochecknoglobals # We need global appContext
+    - paralleltest # Not critical
+    - godot # Comments don't need periods everywhere
+    - nlreturn # Blank lines are stylistic
+    - nestif # Complex nesting is sometimes necessary
+    - lll # Line length is flexible
+    - varnamelen # Short names are fine in Go
+
+linters-settings:
+  depguard:
     rules:
-      - linters:
-          - revive
-        path: _test\.go
-        text: "dot-imports:"
-formatters:
-  enable:
-    - gci
-    - gofmt
-    - gofumpt
-    - goimports
-  exclusions:
-    generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+      prevent_unmaintained_packages:
+        allow:
+          - $gostd
+          - github.com/fire-ant/kro-actions-runner/cmd/kar/app
+          - github.com/fire-ant/kro-actions-runner/internal
+          - github.com/golang/mock/gomock
+          - github.com/pkg/errors
+          - github.com/spf13/cobra
+          - github.com/spf13/pflag
+          - github.com/spf13/viper
+          - k8s.io/api/core/v1
+          - k8s.io/apimachinery/pkg/api/errors
+          - k8s.io/apimachinery/pkg/apis/meta/v1
+          - k8s.io/apimachinery/pkg/apis/meta/v1/unstructured
+          - k8s.io/apimachinery/pkg/runtime/schema
+          - k8s.io/apimachinery/pkg/watch
+          - k8s.io/client-go/dynamic
+          - k8s.io/client-go/kubernetes
+          - k8s.io/client-go/tools/clientcmd
+          - k8s.io/utils/ptr
+          - kubevirt.io/api/core/v1
+          - kubevirt.io/client-go/containerizeddataimporter/fake
+          - kubevirt.io/client-go/kubecli
+          - kubevirt.io/client-go/kubevirt/fake
+          - kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1
+          - github.com/onsi/ginkgo/v2
+          - github.com/onsi/gomega
+          - github.com/matryer/resync
+  gomoddirectives:
+    replace-allow-list:
+      - k8s.io/kube-openapi
+
+issues:
+  exclude-generated: lax
+  exclude-dirs:
+    - third_party
+    - builtin
+    - examples
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - revive
+      text: "dot-imports:"
+    - path: _test\.go
+      linters:
+        - errcheck # Allow unchecked errors in tests

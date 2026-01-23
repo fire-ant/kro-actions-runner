@@ -100,10 +100,10 @@ func TestGetBuildInfo(t *testing.T) {
 // TestEnsureValidCleanupContext tests the ensureValidCleanupContext function
 func TestEnsureValidCleanupContext(t *testing.T) {
 	tests := []struct {
-		name           string
-		parentContext  context.Context
-		expectTimeout  bool
-		minDuration    time.Duration
+		name          string
+		parentContext context.Context
+		expectTimeout bool
+		minDuration   time.Duration
 	}{
 		{
 			name:          "Valid parent context",

@@ -202,10 +202,10 @@ func (r *KRORunner) CreateResources(ctx context.Context, runnerName string, jitC
 
 	// Set metadata annotation with runner info
 	metadata := map[string]interface{}{
-		"runnerName":        runnerName,
-		"scaleSetName":      r.scaleSetName,
-		"jitConfigSecret":   runnerName, // ARC creates secret with same name as runner
-		"createdTimestamp":  time.Now().Format(time.RFC3339),
+		"runnerName":       runnerName,
+		"scaleSetName":     r.scaleSetName,
+		"jitConfigSecret":  runnerName, // ARC creates secret with same name as runner
+		"createdTimestamp": time.Now().Format(time.RFC3339),
 	}
 	metadataJSON, _ := json.Marshal(metadata)
 
