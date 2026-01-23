@@ -1,0 +1,23 @@
+# SPDX-license-identifier: Apache-2.0
+##############################################################################
+# Copyright (c) 2025
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+
+extends: default
+
+rules:
+  # Allow truthy values in GitHub Actions (on, off, yes, no, etc.)
+  truthy:
+    check-keys: false
+  # Allow long lines (common in GitHub Actions for long strings)
+  line-length:
+    max: 200
+    level: warning
+  # Allow indentation for GitHub Actions workflow syntax
+  indentation:
+    spaces: 2
+    indent-sequences: true
