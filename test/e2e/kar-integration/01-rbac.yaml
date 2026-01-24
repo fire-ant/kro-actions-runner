@@ -1,4 +1,10 @@
 apiVersion: kuttl.dev/v1beta1
 kind: TestStep
 commands:
-  - command: kubectl apply -f test/fixtures/rbac/kro-runner-rbac.yaml
+  - script: |
+      # Find project root by looking for go.mod
+      PROJECT_ROOT=$(pwd)
+      while [ ! -f "$PROJECT_ROOT/go.mod" ] && [ "$PROJECT_ROOT" != "/" ]; do
+        PROJECT_ROOT=$(dirname "$PROJECT_ROOT")
+      done
+      kubectl apply -f "$PROJECT_ROOT/test/fixtures/rbac/kro-runner-rbac.yaml"
