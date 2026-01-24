@@ -99,6 +99,8 @@ Run tasks using `mise run <task>`:
 - `mise run setup` - Set up development environment
 
 **Integration Testing:**
+- `mise run test:integration` - Run main kar integration test (fastest validation)
+- `mise run test:e2e:kar` - Run only kar binary integration test (primary test)
 - `mise run test:e2e` - Run all end-to-end integration tests
 - `mise run test:e2e:pod-runner` - Run only pod-runner test
 - `mise run test:all` - Run both unit and integration tests
@@ -365,21 +367,26 @@ mise run test
 Automated end-to-end tests using [kuttl](https://kuttl.dev/) and Kind clusters:
 
 ```bash
+# Run main kar integration test (fastest validation of kar logic)
+mise run test:integration
+
+# Run only kar binary integration test
+mise run test:e2e:kar
+
 # Run all integration tests
 mise run test:e2e
-
-# Run specific test case
-mise run test:e2e:pod-runner
 
 # Run unit and integration tests
 mise run test:all
 ```
 
-**Test Coverage:**
-1. **Pod Runner Flow** - Complete pod-runner provisioning lifecycle
-2. **RGD Discovery** - Label-based ResourceGraphDefinition selection
-3. **RBAC Validation** - Service account permissions verification
-4. **kar Binary Integration** - Actual kar binary execution (simulates ARC behavior)
+**Test Coverage (in priority order):**
+1. **kar Binary Integration** ⭐ **PRIMARY** - Actual kar binary execution (simulates ARC behavior)
+2. **Pod Runner Flow** - Complete pod-runner provisioning lifecycle
+3. **RGD Discovery** - Label-based ResourceGraphDefinition selection
+4. **RBAC Validation** - Service account permissions verification
+
+**Recommendation:** Run `mise run test:integration` for fast validation of kar's core logic before pushing code.
 
 For detailed documentation, debugging tips, and test development, see [test/README.md](test/README.md).
 

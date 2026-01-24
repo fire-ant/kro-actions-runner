@@ -1,0 +1,82 @@
+# SPDX-license-identifier: Apache-2.0
+##############################################################################
+# Copyright (c) 2025
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+name: Integration Tests
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "master"
+  pull_request:
+    branches:
+      - "master"
+jobs:
+  kar-integration:
+    name: kar binary integration test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # 6.1.0
+        with:
+          go-version: "^1.25"
+          cache: false
+
+      - name: Install mise
+        uses: jdx/mise-action@f8dfbcc150159126838e44b882bf34bd98fd90f3 # v2
+        with:
+          version: latest
+          install: true
+          cache: true
+
+      - name: Install tools with mise
+        run: |
+          mise install kubectl
+          mise install kind
+          mise install helm
+          mise install kuttl
+
+      - name: Build kar binary
+        run: mise run build
+
+      - name: Build Docker image
+        run: docker build -t kro-actions-runner:latest .
+
+      - name: Create Kind cluster
+        run: mise run cluster:create
+
+      - name: Install KRO and ARC
+        run: |
+          mise run test/scripts/install-kro.sh
+          mise run test/scripts/install-arc.sh
+
+      - name: Load Docker image into Kind
+        run: kind load docker-image kro-actions-runner:latest --name kro-test
+
+      - name: Run kar integration test
+        run: kubectl kuttl test --config test/e2e/kuttl-test.yaml --test kar-integration
+
+      - name: Show cluster logs on failure
+        if: failure()
+        run: |
+          echo "=== KRO Logs ==="
+          kubectl logs -n kro-system -l app=kro --tail=100 || echo 'KRO logs not available'
+          echo "=== ARC Logs ==="
+          kubectl logs -n arc-systems -l app.kubernetes.io/name=gha-runner-scale-set-controller --tail=100 || echo 'ARC logs not available'
+          echo "=== kar Pod Logs ==="
+          kubectl logs -n arc-runners test-kar-runner --tail=100 || echo 'kar pod logs not available'
+          echo "=== Runner Pod Logs ==="
+          kubectl logs -n arc-runners test-runner-jit-job --tail=100 || echo 'runner pod logs not available'
+
+      - name: Cleanup
+        if: always()
+        run: mise run cluster:delete || true
