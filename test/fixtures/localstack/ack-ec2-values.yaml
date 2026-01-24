@@ -7,8 +7,10 @@ aws:
   # For LocalStack, these are dummy values
   credentials:
     secretName: ack-ec2-user-secrets
+    secretKey: credentials
+    profile: default
   # Configure LocalStack HTTPS endpoint
-  endpoint: https://localstack.localstack.svc.cluster.local:4566
+  endpoint_url: https://localstack.localstack.svc.cluster.local:4566
 
 # Service account
 serviceAccount:
