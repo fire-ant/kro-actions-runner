@@ -35,17 +35,26 @@ extraEnvVars:
     value: "0.0.0.0:4566,0.0.0.0:443"
   - name: USE_SSL
     value: "true"
+  # Point to our custom TLS certificate with correct SANs
+  - name: GATEWAY_SERVER_CERT_PEM_FILE
+    value: "/etc/localstack/tls/server.pem"
   # Disable SSL certificate verification (for testing with self-signed certs)
   - name: SKIP_SSL_CERT_DOWNLOAD
     value: "1"
 
-# Mount docker socket from kind node
+# Mount docker socket from kind node and TLS certificates
 volumes:
   - name: docker-sock
     hostPath:
       path: /var/run/docker.sock
       type: Socket
+  - name: tls-certs
+    secret:
+      secretName: localstack-tls-certs
 
 volumeMounts:
   - name: docker-sock
     mountPath: /var/run/docker.sock
+  - name: tls-certs
+    mountPath: /etc/localstack/tls
+    readOnly: true

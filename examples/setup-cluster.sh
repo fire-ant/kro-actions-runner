@@ -121,11 +121,19 @@ if [ "$SKIP_LOCALSTACK" != "true" ]; then
     kubectl create namespace "$ACK_SYSTEM_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
     # Create dummy AWS credentials secret (required by ACK, but not used by LocalStack)
+    # The ACK controller expects a credentials file in AWS CLI format
+    cat > /tmp/ack-credentials <<EOF
+[default]
+aws_access_key_id = test
+aws_secret_access_key = test
+EOF
+
     kubectl create secret generic ack-ec2-user-secrets \
         --namespace "$ACK_SYSTEM_NAMESPACE" \
-        --from-literal=AWS_ACCESS_KEY_ID=test \
-        --from-literal=AWS_SECRET_ACCESS_KEY=test \
+        --from-file=credentials=/tmp/ack-credentials \
         --dry-run=client -o yaml | kubectl apply -f -
+
+    rm -f /tmp/ack-credentials
 
     # Install ACK EC2 controller from official OCI registry
     echo "Installing ACK EC2 controller version $RELEASE_VERSION from OCI registry..."
