@@ -29,7 +29,7 @@ jobs:
       - name: Install mise
         uses: jdx/mise-action@f8dfbcc150159126838e44b882bf34bd98fd90f3 # v2
         with:
-          version: "2024"
+          version: "2026.1.6"
           install: true
           cache: true
 
