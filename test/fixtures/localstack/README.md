@@ -192,7 +192,7 @@ SKIP_EC2_TESTS=true kubectl kuttl test --config test/e2e/kuttl-test.yaml
 ## Environment Variables
 
 - **SKIP_EC2_TESTS** - Set to `true` to skip LocalStack/ACK installation and EC2 tests
-- **ACK_EC2_VERSION** - ACK EC2 controller version (default: `v1.9.0`)
+- **ACK_EC2_VERSION** - ACK EC2 controller version (default: `1.9.2`)
 
 ## Troubleshooting
 

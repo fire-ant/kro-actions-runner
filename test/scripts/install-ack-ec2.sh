@@ -10,7 +10,7 @@ FIXTURES_DIR="$SCRIPT_DIR/../fixtures/localstack"
 ACK_SYSTEM_NAMESPACE="ack-system"
 SERVICE="ec2"
 AWS_REGION="us-east-1"
-RELEASE_VERSION="${ACK_EC2_VERSION:-v1.9.0}"
+RELEASE_VERSION="${ACK_EC2_VERSION:-1.9.2}"
 
 echo "Installing ACK EC2 Controller..."
 
