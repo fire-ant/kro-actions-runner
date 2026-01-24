@@ -21,7 +21,7 @@ kubectl create namespace localstack --dry-run=client -o yaml | kubectl apply -f 
 # Generate self-signed TLS certificate using openssl directly
 echo "Generating self-signed TLS certificate..."
 TMP_DIR=$(mktemp -d)
-trap "rm -rf $TMP_DIR" EXIT
+trap 'rm -rf "$TMP_DIR"' EXIT
 
 cat >"$TMP_DIR/openssl.cnf" <<EOF
 [req]

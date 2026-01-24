@@ -18,7 +18,7 @@ go = "1.25.0"
 python = "3.12"    # for pre-commit, yamllint
 
 # Development tools
-golangci-lint = "latest"
+golangci-lint = "1.62"
 shfmt = "latest"
 yamlfmt = "0.20.0"
 shellcheck = "0.10.0"
