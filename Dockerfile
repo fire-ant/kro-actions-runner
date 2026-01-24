@@ -5,9 +5,20 @@ WORKDIR /app
 
 RUN apk add --no-cache git=2.49.1-r0
 
+# Copy go mod files first for better caching
+COPY go.mod go.sum ./
+
+# Download dependencies with cache mount
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
+
+# Copy source code
 COPY . .
 
-RUN go build -buildvcs=true -o /go/bin/ ./...
+# Build with cache mounts for both module and build cache
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go build -buildvcs=true -o /go/bin/ ./...
 
 FROM scratch
 
