@@ -1,0 +1,21 @@
+# Verify LocalStack and ACK EC2 controller are running
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 60
+---
+# Check LocalStack pod is running
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: localstack
+status:
+  phase: Running
+---
+# Check ACK EC2 controller is running
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ack-ec2-controller
+  namespace: ack-system
+status:
+  availableReplicas: 1

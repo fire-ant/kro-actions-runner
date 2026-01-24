@@ -1,0 +1,35 @@
+# Create VPC and Subnet for EC2 instances
+# These are required by ACK EC2 Instance resources
+---
+apiVersion: ec2.services.k8s.aws/v1alpha1
+kind: VPC
+metadata:
+  name: test-vpc
+  namespace: arc-runners
+spec:
+  cidrBlocks:
+    - 10.0.0.0/16
+  enableDNSHostnames: true
+  enableDNSSupport: true
+  tags:
+    - key: Name
+      value: test-vpc
+    - key: Purpose
+      value: ec2-runner-test
+---
+apiVersion: ec2.services.k8s.aws/v1alpha1
+kind: Subnet
+metadata:
+  name: test-subnet
+  namespace: arc-runners
+spec:
+  cidrBlock: 10.0.1.0/24
+  vpcRef:
+    from:
+      name: test-vpc
+  availabilityZone: us-east-1a
+  tags:
+    - key: Name
+      value: test-subnet
+    - key: Purpose
+      value: ec2-runner-test
