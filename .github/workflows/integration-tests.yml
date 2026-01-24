@@ -35,6 +35,8 @@ jobs:
 
       - name: Run kar integration test
         run: mise run test:e2e:kar
+        env:
+          SKIP_EC2_TESTS: "true"
 
       - name: Show cluster logs on failure
         if: failure()
