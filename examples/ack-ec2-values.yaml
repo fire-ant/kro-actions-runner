@@ -30,3 +30,25 @@ resources:
 log:
   level: info
   enable_development_logging: false
+
+# Deployment configuration
+deployment:
+  # Additional environment variables for SSL certificate handling
+  extraEnvVars:
+    # Point to LocalStack's CA certificate for TLS verification
+    - name: AWS_CA_BUNDLE
+      value: "/etc/localstack-ca/server.crt"
+
+  # Mount LocalStack's CA certificate
+  extraVolumes:
+    - name: localstack-ca
+      secret:
+        secretName: localstack-tls-certs
+        items:
+          - key: server.crt
+            path: server.crt
+
+  extraVolumeMounts:
+    - name: localstack-ca
+      mountPath: /etc/localstack-ca
+      readOnly: true

@@ -34,6 +34,12 @@ kubectl create secret generic ack-ec2-user-secrets \
 
 rm -f /tmp/ack-credentials
 
+# Copy LocalStack TLS certificate to ack-system namespace for CA bundle
+echo "Copying LocalStack CA certificate to $ACK_SYSTEM_NAMESPACE namespace..."
+kubectl get secret localstack-tls-certs -n localstack -o yaml | \
+    sed "s/namespace: localstack/namespace: $ACK_SYSTEM_NAMESPACE/" | \
+    kubectl apply -f -
+
 # Install ACK EC2 controller from official OCI registry
 echo "Installing ACK EC2 controller version $RELEASE_VERSION..."
 helm upgrade --install ack-$SERVICE-controller \

@@ -92,7 +92,7 @@ Installs ACK EC2 Controller configured for LocalStack:
 
 **Configuration:**
 - Endpoint: `https://localstack.localstack.svc.cluster.local:4566`
-- SSL Verification: Disabled (uses `AWS_EC2_SKIP_SSL_VERIFICATION=true`)
+- SSL Verification: Disabled (uses `AWS_CA_BUNDLE="/dev/null"` to skip cert validation)
 - Region: `us-east-1`
 
 ## HTTPS Configuration

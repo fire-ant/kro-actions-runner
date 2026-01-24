@@ -36,7 +36,7 @@ extraEnvVars:
   - name: USE_SSL
     value: "true"
   # Point to our custom TLS certificate with correct SANs
-  - name: GATEWAY_SERVER_CERT_PEM_FILE
+  - name: CUSTOM_SSL_CERT_PATH
     value: "/etc/localstack/tls/server.pem"
   # Disable SSL certificate verification (for testing with self-signed certs)
   - name: SKIP_SSL_CERT_DOWNLOAD

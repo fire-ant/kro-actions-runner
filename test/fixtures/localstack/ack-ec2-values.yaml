@@ -31,8 +31,24 @@ log:
   level: info
   enable_development_logging: false
 
-# Additional environment variables for SSL certificate handling
-extraEnvVars:
-  # Skip SSL certificate verification for LocalStack self-signed cert
-  - name: AWS_EC2_SKIP_SSL_VERIFICATION
-    value: "true"
+# Deployment configuration
+deployment:
+  # Additional environment variables for SSL certificate handling
+  extraEnvVars:
+    # Point to LocalStack's CA certificate for TLS verification
+    - name: AWS_CA_BUNDLE
+      value: "/etc/localstack-ca/server.crt"
+
+  # Mount LocalStack's CA certificate
+  extraVolumes:
+    - name: localstack-ca
+      secret:
+        secretName: localstack-tls-certs
+        items:
+          - key: server.crt
+            path: server.crt
+
+  extraVolumeMounts:
+    - name: localstack-ca
+      mountPath: /etc/localstack-ca
+      readOnly: true
