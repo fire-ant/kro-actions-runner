@@ -4,12 +4,14 @@ This directory contains integration tests for kro-actions-runner using [kuttl](h
 
 ## Overview
 
-The integration tests validate:
+The integration tests validate (in priority order):
 
-1. **Pod Runner Flow** (`e2e/pod-runner/`) - End-to-end pod-runner provisioning
-2. **RGD Discovery** (`e2e/rgd-discovery/`) - Label-based ResourceGraphDefinition selection
-3. **RBAC Validation** (`e2e/rbac-validation/`) - Service account permissions
-4. **kar Binary Integration** (`e2e/kar-integration/`) - Actual kar binary execution (simulates ARC)
+1. **kar Binary Integration** ⭐ **PRIMARY** (`e2e/kar-integration/`) - Actual kar binary execution (simulates ARC)
+2. **Pod Runner Flow** (`e2e/pod-runner/`) - End-to-end pod-runner provisioning
+3. **RGD Discovery** (`e2e/rgd-discovery/`) - Label-based ResourceGraphDefinition selection
+4. **RBAC Validation** (`e2e/rbac-validation/`) - Service account permissions
+
+**kar-integration is the primary test** as it validates the actual kar binary logic without requiring GitHub API integration.
 
 ## Prerequisites
 
@@ -27,7 +29,13 @@ This installs:
 
 ## Quick Start
 
-Run all integration tests:
+Run the main kar integration test (fastest validation):
+
+```bash
+mise run test:integration
+```
+
+Or run all integration tests:
 
 ```bash
 mise run test:e2e
@@ -39,10 +47,16 @@ This will:
 3. Create a Kind cluster
 4. Install KRO and ARC
 5. Load the image into the cluster
-6. Run all kuttl tests
+6. Run all kuttl tests (kar-integration first)
 7. Clean up
 
 ## Running Specific Tests
+
+Run only the kar integration test (primary test):
+
+```bash
+mise run test:e2e:kar
+```
 
 Run only the pod-runner test:
 
