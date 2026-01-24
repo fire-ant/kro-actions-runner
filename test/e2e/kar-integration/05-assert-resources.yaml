@@ -1,0 +1,20 @@
+# Assert that kar created the ResourceGraph and runner pod was provisioned
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 120
+---
+# Check the ResourceGraph instance was created by kar
+apiVersion: v1alpha1
+kind: PodRunner
+metadata:
+  name: test-runner-jit
+  namespace: arc-runners
+---
+# Check the runner Pod was provisioned by KRO
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-runner-jit-job
+  namespace: arc-runners
+status:
+  phase: Running

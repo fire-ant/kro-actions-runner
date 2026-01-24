@@ -9,6 +9,7 @@ The integration tests validate:
 1. **Pod Runner Flow** (`e2e/pod-runner/`) - End-to-end pod-runner provisioning
 2. **RGD Discovery** (`e2e/rgd-discovery/`) - Label-based ResourceGraphDefinition selection
 3. **RBAC Validation** (`e2e/rbac-validation/`) - Service account permissions
+4. **kar Binary Integration** (`e2e/kar-integration/`) - Actual kar binary execution (simulates ARC)
 
 ## Prerequisites
 
@@ -122,12 +123,25 @@ test/
 │   │   ├── 01-assert.yaml         # Assert all exist
 │   │   ├── 02-query-labels.yaml   # Query by labels
 │   │   └── 02-assert.yaml
-│   └── rbac-validation/           # RBAC permissions test
+│   ├── rbac-validation/           # RBAC permissions test
+│   │   ├── 00-namespace.yaml
+│   │   ├── 01-rbac.yaml           # Apply RBAC
+│   │   ├── 01-assert.yaml         # Assert resources
+│   │   ├── 02-check-permissions.yaml  # Test permissions
+│   │   └── 02-assert.yaml
+│   └── kar-integration/           # kar binary integration test
 │       ├── 00-namespace.yaml
 │       ├── 01-rbac.yaml           # Apply RBAC
-│       ├── 01-assert.yaml         # Assert resources
-│       ├── 02-check-permissions.yaml  # Test permissions
-│       └── 02-assert.yaml
+│       ├── 01-assert.yaml
+│       ├── 02-rgd.yaml            # Apply RGD
+│       ├── 02-assert.yaml
+│       ├── 03-secret.yaml         # Create test secret
+│       ├── 03-assert.yaml
+│       ├── 04-kar-pod.yaml        # Run kar binary in pod
+│       ├── 04-assert.yaml         # Assert kar pod succeeded
+│       ├── 05-assert-resources.yaml  # Assert ResourceGraph and runner pod
+│       ├── 06-cleanup.yaml        # Delete ResourceGraph
+│       └── 06-assert.yaml         # Assert cleanup
 ├── fixtures/                      # Shared test fixtures
 │   ├── rbac/
 │   │   └── kro-runner-rbac.yaml
@@ -197,6 +211,29 @@ test/
 - RBAC resources are created correctly
 - ServiceAccount has required permissions
 - Namespace-scoped and cluster-scoped access
+
+### 4. kar Binary Integration Test
+
+**Purpose:** Validates the actual kar binary by running it in a pod (simulates ARC behavior).
+
+**Steps:**
+1. Apply RBAC resources
+2. Apply Pod Runner RGD
+3. Create mock JIT config secret
+4. Run kar binary in a pod with environment variables (simulates ARC)
+5. Assert kar pod completes successfully
+6. Assert ResourceGraph was created by kar
+7. Assert runner Pod was provisioned by KRO
+8. Clean up ResourceGraph
+
+**What it tests:**
+- Actual kar binary execution (not just KRO)
+- RGD discovery logic by label matching
+- ResourceGraph creation by kar
+- Pod provisioning through the full stack
+- End-to-end integration without GitHub API
+
+**Key difference:** This tests the actual kar binary code path, whereas pod-runner test directly creates ResourceGraphs. This is the most realistic test without needing GitHub API access.
 
 ## Configuration
 

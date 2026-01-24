@@ -1,0 +1,4 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - command: kubectl delete podrunner test-runner-jit -n arc-runners --ignore-not-found=true

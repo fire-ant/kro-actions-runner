@@ -1,0 +1,34 @@
+# Run the kar binary in a pod (simulates what ARC does)
+# This tests the actual kar binary, not just KRO resource creation
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-kar-runner
+  namespace: arc-runners
+spec:
+  restartPolicy: Never
+  serviceAccountName: kro-runner
+  containers:
+    - name: kar
+      image: kro-actions-runner:latest
+      imagePullPolicy: IfNotPresent
+      env:
+        # Scale set name for RGD discovery
+        - name: ACTIONS_RUNNER_SCALE_SET_NAME
+          value: "slapchop-linux-builders"
+        # Runner name (must match the secret name)
+        - name: RUNNER_NAME
+          value: "test-runner-jit"
+        # JIT config from secret (simulates what ARC provides)
+        - name: ACTIONS_RUNNER_INPUT_JITCONFIG
+          valueFrom:
+            secretKeyRef:
+              name: test-runner-jit
+              key: .jitconfig
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "128Mi"
+        limits:
+          cpu: "200m"
+          memory: "256Mi"
