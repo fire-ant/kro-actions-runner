@@ -26,42 +26,15 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # 6.1.0
-        with:
-          go-version: "^1.25"
-          cache: false
-
       - name: Install mise
         uses: jdx/mise-action@f8dfbcc150159126838e44b882bf34bd98fd90f3 # v2
         with:
-          install: false
-          cache: false
-
-      - name: Install kubectl
-        uses: azure/setup-kubectl@3e0aec4d80787158d308d7b364cb1b702e7feb7f # v4.0.0
-
-      - name: Install kind
-        uses: helm/kind-action@0025e74a8c7512023d06dc019c617aa3cf561fde # v1.10.0
-        with:
-          install_only: true
-
-      - name: Install helm
-        uses: azure/setup-helm@fe7b79cd5ee1e45176fcad797de68ecaf3ca4814 # v4.2.0
-
-      - name: Install kuttl
-        run: |
-          curl -Lo /tmp/kubectl-kuttl https://github.com/kudobuilder/kuttl/releases/download/v0.15.0/kubectl-kuttl_0.15.0_linux_x86_64
-          chmod +x /tmp/kubectl-kuttl
-          sudo mv /tmp/kubectl-kuttl /usr/local/bin/kubectl-kuttl
-
-      - name: Build kar binary
-        run: go build -o bin/kar ./cmd/kar
-
-      - name: Build Docker image
-        run: docker build -t kro-actions-runner:latest .
+          version: "2024"
+          install: true
+          cache: true
 
       - name: Run kar integration test
-        run: kubectl kuttl test --config test/e2e/kuttl-test.yaml --test kar-integration
+        run: mise run test:e2e:kar
 
       - name: Show cluster logs on failure
         if: failure()
