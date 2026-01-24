@@ -60,17 +60,6 @@ jobs:
       - name: Build Docker image
         run: docker build -t kro-actions-runner:latest .
 
-      - name: Create Kind cluster
-        run: kind create cluster --name kro-test --config test/fixtures/kind/kind-config.yaml
-
-      - name: Install KRO and ARC
-        run: |
-          ./test/scripts/install-kro.sh
-          ./test/scripts/install-arc.sh
-
-      - name: Load Docker image into Kind
-        run: kind load docker-image kro-actions-runner:latest --name kro-test
-
       - name: Run kar integration test
         run: kubectl kuttl test --config test/e2e/kuttl-test.yaml --test kar-integration
 
@@ -85,7 +74,3 @@ jobs:
           kubectl logs -n arc-runners test-kar-runner --tail=100 || echo 'kar pod logs not available'
           echo "=== Runner Pod Logs ==="
           kubectl logs -n arc-runners test-runner-jit-job --tail=100 || echo 'runner pod logs not available'
-
-      - name: Cleanup
-        if: always()
-        run: kind delete cluster --name kro-test || true
