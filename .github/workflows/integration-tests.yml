@@ -34,30 +34,39 @@ jobs:
       - name: Install mise
         uses: jdx/mise-action@f8dfbcc150159126838e44b882bf34bd98fd90f3 # v2
         with:
-          version: latest
-          install: true
-          cache: true
+          install: false
+          cache: false
 
-      - name: Install tools with mise
+      - name: Install kubectl
+        uses: azure/setup-kubectl@3e0aec4d80787158d308d7b364cb1b702e7feb7f # v4.0.0
+
+      - name: Install kind
+        uses: helm/kind-action@0025e74a8c7512023d06dc019c617aa3cf561fde # v1.10.0
+        with:
+          install_only: true
+
+      - name: Install helm
+        uses: azure/setup-helm@fe7b79cd5ee1e45176fcad797de68ecaf3ca4814 # v4.2.0
+
+      - name: Install kuttl
         run: |
-          mise install kubectl
-          mise install kind
-          mise install helm
-          mise install kuttl
+          curl -Lo /tmp/kubectl-kuttl https://github.com/kudobuilder/kuttl/releases/download/v0.15.0/kubectl-kuttl_0.15.0_linux_x86_64
+          chmod +x /tmp/kubectl-kuttl
+          sudo mv /tmp/kubectl-kuttl /usr/local/bin/kubectl-kuttl
 
       - name: Build kar binary
-        run: mise run build
+        run: go build -o bin/kar ./cmd/kar
 
       - name: Build Docker image
         run: docker build -t kro-actions-runner:latest .
 
       - name: Create Kind cluster
-        run: mise run cluster:create
+        run: kind create cluster --name kro-test --config test/fixtures/kind/kind-config.yaml
 
       - name: Install KRO and ARC
         run: |
-          mise run test/scripts/install-kro.sh
-          mise run test/scripts/install-arc.sh
+          ./test/scripts/install-kro.sh
+          ./test/scripts/install-arc.sh
 
       - name: Load Docker image into Kind
         run: kind load docker-image kro-actions-runner:latest --name kro-test
@@ -79,4 +88,4 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: mise run cluster:delete || true
+        run: kind delete cluster --name kro-test || true
