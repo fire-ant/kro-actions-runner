@@ -18,7 +18,7 @@ go = "1.25.0"
 python = "3.12"    # for pre-commit, yamllint
 
 # Development tools
-golangci-lint = "latest"
+golangci-lint = "1.62"
 shfmt = "latest"
 yamlfmt = "0.20.0"
 shellcheck = "0.10.0"
@@ -101,6 +101,14 @@ run = [
     "test/scripts/load-image.sh"
 ]
 
+[tasks."cluster:setup:localstack"]
+description = "Set up cluster with KRO, ARC, LocalStack, and ACK EC2 controller"
+depends = ["cluster:setup"]
+run = [
+    "test/scripts/install-localstack.sh",
+    "test/scripts/install-ack-ec2.sh"
+]
+
 [tasks."cluster:reset"]
 description = "Delete and recreate cluster from scratch"
 run = [
@@ -150,6 +158,23 @@ run = [
     "mise run build",
     "${DOCKER_CMD} build -t kro-actions-runner:latest .",
     "kubectl kuttl test --config test/e2e/kuttl-test.yaml --test kar-integration"
+]
+
+[tasks."test:e2e:ec2"]
+description = "Run only EC2 runner test case (requires LocalStack and ACK)"
+run = [
+    "mise run build",
+    "${DOCKER_CMD} build -t kro-actions-runner:latest .",
+    "kubectl kuttl test --config test/e2e/kuttl-test.yaml --test ec2-runner"
+]
+
+[tasks."test:e2e:skip-ec2"]
+description = "Run all e2e tests except EC2 runner (no LocalStack required)"
+env = { SKIP_EC2_TESTS = "true" }
+run = [
+    "mise run build",
+    "${DOCKER_CMD} build -t kro-actions-runner:latest .",
+    "kubectl kuttl test --config test/e2e/kuttl-test.yaml"
 ]
 
 [tasks."test:integration"]

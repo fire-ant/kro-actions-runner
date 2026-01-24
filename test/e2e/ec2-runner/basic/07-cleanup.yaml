@@ -1,0 +1,7 @@
+# Cleanup: Delete the ResourceGraph to trigger resource cleanup
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - command: kubectl delete ec2runner test-ec2-runner-001 -n arc-runners --ignore-not-found=true
+  - command: kubectl delete subnet test-subnet -n arc-runners --ignore-not-found=true
+  - command: kubectl delete vpc test-vpc -n arc-runners --ignore-not-found=true

@@ -1,0 +1,36 @@
+# ACK EC2 Controller Helm values for test environment
+# Configured to use LocalStack HTTPS endpoint instead of real AWS
+
+# AWS credentials (not used by LocalStack, but required by the chart)
+aws:
+  region: us-east-1
+  # For LocalStack, these are dummy values
+  credentials:
+    secretName: ack-ec2-user-secrets
+  # Configure LocalStack HTTPS endpoint
+  endpoint: https://localstack.localstack.svc.cluster.local:4566
+
+# Service account
+serviceAccount:
+  create: true
+  name: ack-ec2-controller
+
+# Resources for test environment
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+# Log level
+log:
+  level: info
+  enable_development_logging: false
+
+# Additional environment variables for SSL certificate handling
+extraEnvVars:
+  # Skip SSL certificate verification for LocalStack self-signed cert
+  - name: AWS_EC2_SKIP_SSL_VERIFICATION
+    value: "true"

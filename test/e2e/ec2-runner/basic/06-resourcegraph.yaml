@@ -1,0 +1,14 @@
+# Create an EC2Runner ResourceGraph instance to trigger EC2 instance creation
+apiVersion: v1alpha1
+kind: EC2Runner
+metadata:
+  name: test-ec2-runner-001
+  namespace: arc-runners
+spec:
+  runnerName: test-runner-jit
+  imageID: ami-000001
+  instanceType: t3.medium
+  # Reference the test subnet created in previous step
+  # Note: In real usage, this would be provided by the subnet status
+  # For testing, we use a placeholder that LocalStack will accept
+  subnetID: subnet-test001

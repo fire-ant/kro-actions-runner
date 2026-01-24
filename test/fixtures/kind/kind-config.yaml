@@ -1,4 +1,5 @@
 # Kind cluster configuration for kuttl integration tests
+# Includes Docker socket mount for LocalStack EC2 instances
 # Usage: kind create cluster --name kro-test --config kind-config.yaml
 
 kind: Cluster
@@ -19,3 +20,10 @@ nodes:
       - containerPort: 443
         hostPort: 443
         protocol: TCP
+      - containerPort: 4566
+        hostPort: 4566
+        protocol: TCP
+    extraMounts:
+      # Mount Docker socket for LocalStack EC2
+      - hostPath: /var/run/docker.sock
+        containerPath: /var/run/docker.sock

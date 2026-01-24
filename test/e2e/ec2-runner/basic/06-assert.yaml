@@ -1,0 +1,21 @@
+# Assert EC2Runner ResourceGraph is created and EC2 Instance is launched
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 180
+---
+# Check the EC2Runner ResourceGraph instance exists
+apiVersion: v1alpha1
+kind: EC2Runner
+metadata:
+  name: test-ec2-runner-001
+  namespace: arc-runners
+---
+# Check the EC2 Instance is created
+apiVersion: ec2.services.k8s.aws/v1alpha1
+kind: Instance
+metadata:
+  name: test-runner-jit
+  namespace: arc-runners
+status:
+  instanceState:
+    name: running

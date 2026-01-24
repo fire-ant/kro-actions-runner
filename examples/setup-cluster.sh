@@ -115,7 +115,7 @@ if [ "$SKIP_LOCALSTACK" != "true" ]; then
     ACK_SYSTEM_NAMESPACE="ack-system"
     SERVICE="ec2"
     AWS_REGION="us-east-1"
-    RELEASE_VERSION="${ACK_EC2_VERSION:-v1.9.0}"
+    RELEASE_VERSION="${ACK_EC2_VERSION:-1.9.2}"
 
     # Create namespace for ACK controllers
     kubectl create namespace "$ACK_SYSTEM_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -

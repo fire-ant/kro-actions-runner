@@ -1,0 +1,20 @@
+# Assert VPC and Subnet are created
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 120
+---
+apiVersion: ec2.services.k8s.aws/v1alpha1
+kind: VPC
+metadata:
+  name: test-vpc
+  namespace: arc-runners
+status:
+  state: available
+---
+apiVersion: ec2.services.k8s.aws/v1alpha1
+kind: Subnet
+metadata:
+  name: test-subnet
+  namespace: arc-runners
+status:
+  state: available
