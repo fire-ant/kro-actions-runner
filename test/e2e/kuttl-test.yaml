@@ -27,9 +27,7 @@ commands:
     ignoreFailure: false
   - command: test/scripts/load-image.sh
     ignoreFailure: false
-# Test directories to run (kar-integration first as primary test)
+# Test directory containing test cases
+# Each subdirectory in test/e2e/ is a test case
 testDirs:
-  - test/e2e/kar-integration/     # PRIMARY - Tests actual kar binary
-  - test/e2e/pod-runner/
-  - test/e2e/rgd-discovery/
-  - test/e2e/rbac-validation/
+  - test/e2e/
