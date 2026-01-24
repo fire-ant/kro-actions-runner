@@ -1,0 +1,13 @@
+# Assert kar pod completes successfully
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 120
+---
+# kar pod should complete successfully
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-kar-runner
+  namespace: arc-runners
+status:
+  phase: Succeeded

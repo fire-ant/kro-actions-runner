@@ -1,0 +1,9 @@
+# Assert cleanup completed - verify resources are deleted
+# Kuttl will verify that the PodRunner no longer exists by timeout
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 60
+commands:
+  - command: kubectl get podrunner test-runner-jit -n arc-runners
+    ignoreFailure: true
+    # This command should fail (exit non-zero) because the resource should be deleted

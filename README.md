@@ -379,6 +379,7 @@ mise run test:all
 1. **Pod Runner Flow** - Complete pod-runner provisioning lifecycle
 2. **RGD Discovery** - Label-based ResourceGraphDefinition selection
 3. **RBAC Validation** - Service account permissions verification
+4. **kar Binary Integration** - Actual kar binary execution (simulates ARC behavior)
 
 For detailed documentation, debugging tips, and test development, see [test/README.md](test/README.md).
 
