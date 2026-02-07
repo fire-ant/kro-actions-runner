@@ -9,8 +9,6 @@
 #
 # Note: The ClusterRole and ClusterRoleBinding are cluster-scoped,
 # but the ServiceAccount, Role, and RoleBinding are namespace-scoped
-
----
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -18,7 +16,6 @@ metadata:
   namespace: arc-runners
   annotations:
     checkov.io/skip1: CKV_K8S_21=Namespace set for testing
-
 ---
 # Namespace-scoped Role for ResourceGraphs, Secrets, and Pods
 apiVersion: rbac.authorization.k8s.io/v1
@@ -33,17 +30,14 @@ rules:
   - apiGroups: ["kro.run"]
     resources: ["resourcegraphs"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-
   # Secret access for JIT config (created by ARC)
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["get", "list"]
-
   # Pod access for owner references
   - apiGroups: [""]
     resources: ["pods"]
     verbs: ["get", "list"]
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -60,7 +54,6 @@ roleRef:
   kind: Role
   name: kro-runner
   apiGroup: rbac.authorization.k8s.io
-
 ---
 # Cluster-scoped ClusterRole for listing ResourceGraphDefinitions
 # RGDs are cluster-scoped resources, so we need cluster-level permissions
@@ -73,7 +66,6 @@ rules:
   - apiGroups: ["kro.run"]
     resources: ["resourcegraphdefinitions"]
     verbs: ["get", "list", "watch"]
-
 ---
 # Cluster-scoped binding that grants the ServiceAccount cluster-level permissions
 apiVersion: rbac.authorization.k8s.io/v1

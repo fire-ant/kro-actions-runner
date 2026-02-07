@@ -1,0 +1,81 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: ec2-runner-with-vpc
+  labels:
+    actions.github.com/scale-set-name: "test-runners"
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: EC2RunnerWithVPC
+    spec:
+      # Runner name (also used as the secret name created by ARC)
+      runnerName: string
+      # Subnet name from VPC Network ResourceGraph
+      subnetName: string
+      # Security Group name from VPC Network ResourceGraph
+      securityGroupName: string
+      # AMI ID for the runner instance
+      imageID: string | default = "ami-000001"
+      # Instance type
+      instanceType: string | default = "t3.medium"
+  resources:
+    # Reference the Subnet created by VPC Network
+    - id: subnet
+      externalRef:
+        apiVersion: ec2.services.k8s.aws/v1alpha1
+        kind: Subnet
+        metadata:
+          name: ${schema.spec.subnetName}
+    # Reference the Security Group created by VPC Network
+    - id: securityGroup
+      externalRef:
+        apiVersion: ec2.services.k8s.aws/v1alpha1
+        kind: SecurityGroup
+        metadata:
+          name: ${schema.spec.securityGroupName}
+    # Reference the ARC-created JIT config secret
+    - id: jitSecret
+      externalRef:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: ${schema.spec.runnerName}
+    # The EC2 runner Instance
+    - id: runnerInstance
+      readyWhen:
+        # Instance is ready when it's running (actively executing workflow)
+        # Note: ResourceGraph will stay READY even after termination
+        - ${runnerInstance.status.state.name == "running"}
+      template:
+        apiVersion: ec2.services.k8s.aws/v1alpha1
+        kind: Instance
+        metadata:
+          name: ${schema.spec.runnerName}
+        spec:
+          # AMI ID (for LocalStack, this should match a tagged Docker image)
+          imageID: ${schema.spec.imageID}
+          # Instance type
+          instanceType: ${schema.spec.instanceType}
+          # Reference subnet from VPC Network
+          subnetRef:
+            from:
+              name: ${subnet.metadata.name}
+          # Reference security group from VPC Network (by name)
+          securityGroups:
+            - ${securityGroup.spec.name}
+          # User data with JIT config injected from secret
+          # SECURITY NOTE: For LocalStack testing, JIT config is in userData
+          # For production AWS, use AWS Secrets Manager and fetch in script
+          # The JIT config is base64-encoded in K8s secret, kept encoded here
+          userData: ${string(jitSecret.data[".jitconfig"])}
+          # Tags for identification
+          tags:
+            - key: Name
+              value: ${schema.spec.runnerName}
+            - key: Type
+              value: github-actions-runner
+            - key: ManagedBy
+              value: kro-actions-runner
+            - key: JITSecretRef
+              value: ${schema.spec.runnerName}

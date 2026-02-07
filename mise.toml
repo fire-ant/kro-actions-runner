@@ -29,15 +29,32 @@ kubectl = "latest"
 kind = "latest"
 helm = "latest"
 kuttl = "latest"
+ctlptl = "latest"
+
+# AWS tools
+awscli = "latest"
 
 [env]
 # Docker command (defaults to docker, set to podman if needed)
 DOCKER_CMD = "docker"
 
 # Kubernetes testing configuration
-KIND_CLUSTER_NAME = "kro-test"
+KIND_CLUSTER_NAME = "gha-arc-kro-runner"
 KUTTL_NAMESPACE = "arc-runners"
 CONTROLLER_NS = "arc-systems"
+
+# Local registry configuration
+REGISTRY_NAME = "kro-registry"
+REGISTRY_PORT = "5005"
+REGISTRY_HOST = "localhost:5005"
+
+# Image configuration
+IMAGE_NAME = "kro-actions-runner"
+IMAGE_TAG = "latest"
+
+# LocalStack configuration
+LOCALSTACK_ENDPOINT = "http://localhost:30566"
+AWS_REGION = "us-east-1"
 
 [tasks.test]
 description = "Run Go tests"
@@ -57,12 +74,37 @@ run = [
     "golangci-lint run",
     "yamllint .",
     "shellcheck $(find . -name '*.sh' -not -path './.*' 2>/dev/null || true)",
+    "pre-commit run bashate --all-files",
     "shfmt -d -s -i 4 ."
+]
+
+[tasks."lint:fix"]
+description = "Auto-fix linting issues where possible"
+run = [
+    "go fmt ./...",
+    "shfmt -l -w -s -i 4 .",
+    "yamlfmt -dstar **/*.{yaml,yml}",
+    "echo ''",
+    "echo 'Note: bashate and shellcheck issues must be fixed manually'",
+    "echo 'Run \"mise run lint\" to check for remaining issues'"
 ]
 
 [tasks.build]
 description = "Build the kar binary"
 run = "go build -o bin/kar ./cmd/kar"
+
+[tasks."image:build"]
+description = "Build the kro-actions-runner Docker image"
+run = "${DOCKER_CMD} build -t ${REGISTRY_HOST}/${IMAGE_NAME}:${IMAGE_TAG} ."
+
+[tasks."image:push"]
+description = "Push the kro-actions-runner image to local registry"
+run = "${DOCKER_CMD} push ${REGISTRY_HOST}/${IMAGE_NAME}:${IMAGE_TAG}"
+
+[tasks."image:build-push"]
+description = "Build and push the kro-actions-runner image"
+depends = ["image:build"]
+run = "mise run image:push"
 
 [tasks.clean]
 description = "Clean build artifacts"
@@ -82,31 +124,31 @@ run = "mise run install-hooks"
 
 # Cluster management tasks
 [tasks."cluster:create"]
-description = "Create kind cluster for testing"
+description = "Create kind cluster with local registry using ctlptl"
 run = [
-    "kind create cluster --name ${KIND_CLUSTER_NAME} --config test/fixtures/kind/kind-config.yaml",
+    "ctlptl apply -f test/kind/ctlptl-kind-config.yaml",
     "kubectl cluster-info --context kind-${KIND_CLUSTER_NAME}"
 ]
 
 [tasks."cluster:delete"]
-description = "Delete kind cluster"
-run = "kind delete cluster --name ${KIND_CLUSTER_NAME}"
+description = "Delete kind cluster and registry using ctlptl"
+run = "ctlptl delete -f test/kind/ctlptl-kind-config.yaml"
 
 [tasks."cluster:setup"]
 description = "Set up cluster with KRO, ARC, and prerequisites"
 depends = ["cluster:create"]
 run = [
-    "test/scripts/install-kro.sh",
-    "test/scripts/install-arc.sh",
-    "test/scripts/load-image.sh"
+    "scripts/install-kro.sh",
+    "scripts/install-arc.sh",
+    "scripts/load-image.sh"
 ]
 
 [tasks."cluster:setup:localstack"]
-description = "Set up cluster with KRO, ARC, LocalStack, and ACK EC2 controller"
+description = "Set up cluster with KRO, ARC, LocalStack, and ACK EC2 controller (deprecated: use cluster:setup:full)"
 depends = ["cluster:setup"]
 run = [
-    "test/scripts/install-localstack.sh",
-    "test/scripts/install-ack-ec2.sh"
+    "scripts/install-localstack.sh",
+    "scripts/install-ack-ec2.sh"
 ]
 
 [tasks."cluster:reset"]
@@ -133,6 +175,147 @@ run = [
     "kubectl get pods -n ${CONTROLLER_NS}",
     "kubectl get rgd",
     "kubectl get resourcegraphs -A"
+]
+
+# LocalStack tasks
+[tasks."localstack:deploy"]
+description = "Deploy LocalStack to cluster"
+run = "scripts/install-localstack.sh"
+
+[tasks."localstack:logs"]
+description = "Show LocalStack logs"
+run = "kubectl logs -n localstack -l app=localstack --tail=100 -f"
+
+[tasks."localstack:test"]
+description = "Test LocalStack connectivity"
+run = [
+    "echo '=== Testing LocalStack connectivity ==='",
+    "kubectl exec -n localstack deploy/localstack -- awslocal ec2 describe-regions",
+    "echo ''",
+    "echo '=== VPCs ==='",
+    "kubectl exec -n localstack deploy/localstack -- awslocal ec2 describe-vpcs",
+    "echo ''",
+    "echo '=== Subnets ==='",
+    "kubectl exec -n localstack deploy/localstack -- awslocal ec2 describe-subnets"
+]
+
+[tasks."localstack:shell"]
+description = "Open shell in LocalStack pod"
+run = "kubectl exec -it -n localstack deploy/localstack -- /bin/bash"
+
+# ACK tasks
+[tasks."ack:install"]
+description = "Install ACK EC2 controller"
+run = "scripts/install-ack-ec2.sh"
+
+[tasks."ack:logs"]
+description = "Show ACK EC2 controller logs"
+run = "kubectl logs -n ack-system -l app.kubernetes.io/name=ec2-chart --tail=100 -f"
+
+# EC2 tasks
+[tasks."ec2:tag-ami"]
+description = "Tag runner image as AMI for LocalStack EC2"
+run = [
+    "echo 'Pulling image from local registry...'",
+    "${DOCKER_CMD} pull ${REGISTRY_HOST}/${IMAGE_NAME}:${IMAGE_TAG}",
+    "echo 'Tagging as LocalStack AMI...'",
+    "${DOCKER_CMD} tag ${REGISTRY_HOST}/${IMAGE_NAME}:${IMAGE_TAG} localstack-ec2/github-runner-ami:ami-000001",
+    "echo ''",
+    "echo 'Tagged AMI: ami-000001'",
+    "echo 'Source: ${REGISTRY_HOST}/${IMAGE_NAME}:${IMAGE_TAG}'"
+]
+
+[tasks."ec2:list-resources"]
+description = "List EC2 resources in LocalStack"
+run = [
+    "echo '=== VPCs ==='",
+    "kubectl exec -n localstack deploy/localstack -- awslocal ec2 describe-vpcs --query 'Vpcs[*].[VpcId,CidrBlock]' --output table",
+    "echo ''",
+    "echo '=== Subnets ==='",
+    "kubectl exec -n localstack deploy/localstack -- awslocal ec2 describe-subnets --query 'Subnets[*].[SubnetId,VpcId,CidrBlock]' --output table",
+    "echo ''",
+    "echo '=== Instances ==='",
+    "kubectl exec -n localstack deploy/localstack -- awslocal ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId,State.Name,InstanceType]' --output table || echo 'No instances running'"
+]
+
+[tasks."ec2:watch-instances"]
+description = "Watch EC2 instances with detailed status (state, type, AMI)"
+run = "scripts/watch-instances.sh default"
+
+[tasks."ec2:list-instances"]
+description = "List EC2 instances with detailed status"
+run = "kubectl get instances -n default -o custom-columns='NAME:.metadata.name,INSTANCE_ID:.status.instanceID,STATE:.status.state.name,TYPE:.spec.instanceType,AMI:.spec.imageID,AGE:.metadata.creationTimestamp'"
+
+[tasks."ec2:get-subnet"]
+description = "Get the subnet ID for EC2Runner instances"
+run = "kubectl exec -n localstack deploy/localstack -- awslocal ec2 describe-subnets --query 'Subnets[0].SubnetId' --output text"
+
+[tasks."ec2:test"]
+description = "Test EC2 Runner with LocalStack (creates VPC and EC2 instance)"
+run = "scripts/test-ec2-runner.sh"
+
+# Comprehensive cluster tasks
+[tasks."cluster:verify"]
+description = "Verify all cluster components are running"
+run = [
+    "echo '=== Checking KRO ==='",
+    "kubectl get pods -n kro-system",
+    "echo ''",
+    "echo '=== Checking ARC ==='",
+    "kubectl get pods -n ${CONTROLLER_NS}",
+    "echo ''",
+    "echo '=== Checking LocalStack ==='",
+    "kubectl get pods -n localstack 2>/dev/null || echo 'LocalStack not installed'",
+    "echo ''",
+    "echo '=== Checking ACK EC2 ==='",
+    "kubectl get pods -n ack-system 2>/dev/null || echo 'ACK not installed'",
+    "echo ''",
+    "echo '=== Checking RGDs ==='",
+    "kubectl get rgd",
+    "echo ''",
+    "echo '=== Cluster verification complete ==='",
+]
+
+[tasks."cluster:setup:full"]
+description = "Complete cluster setup with LocalStack and ACK"
+depends = ["cluster:setup"]
+run = [
+    "scripts/install-localstack.sh",
+    "scripts/install-ack-ec2.sh",
+    "echo ''",
+    "echo '=== Full cluster setup complete ==='",
+    "mise run cluster:verify"
+]
+
+# Development workflow tasks
+[tasks."dev:setup"]
+description = "Complete development environment setup (idempotent with ctlptl)"
+run = [
+    "echo '=== Starting development setup ==='",
+    "mise run cluster:create",
+    "mise run cluster:setup",
+    "mise run localstack:deploy",
+    "mise run ack:install",
+    "echo ''",
+    "echo '=== Building and pushing kro-actions-runner image ==='",
+    "mise run build",
+    "mise run image:build-push",
+    "echo ''",
+    "echo '=== Tagging runner image as AMI ==='",
+    "mise run ec2:tag-ami",
+    "echo ''",
+    "echo '=== Development setup complete ==='",
+    "mise run cluster:verify"
+]
+
+[tasks."dev:quick"]
+description = "Quick development workflow (rebuild and push)"
+run = [
+    "mise run build",
+    "mise run image:build-push",
+    "echo ''",
+    "echo 'Image rebuilt and pushed to registry - ready for testing'",
+    "echo 'Image: ${REGISTRY_HOST}/${IMAGE_NAME}:${IMAGE_TAG}'"
 ]
 
 # Integration testing tasks

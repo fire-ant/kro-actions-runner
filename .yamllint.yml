@@ -6,9 +6,7 @@
 # which accompanies this distribution, and is available at
 # http://www.apache.org/licenses/LICENSE-2.0
 ##############################################################################
-
 extends: default
-
 rules:
   # Allow truthy values in GitHub Actions (on, off, yes, no, etc.)
   truthy:

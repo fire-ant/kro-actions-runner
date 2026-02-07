@@ -1,6 +1,5 @@
 # Create VPC and Subnet for EC2 instances
 # These are required by ACK EC2 Instance resources
----
 apiVersion: ec2.services.k8s.aws/v1alpha1
 kind: VPC
 metadata:

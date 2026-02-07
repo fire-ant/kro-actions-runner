@@ -1,0 +1,12 @@
+apiVersion: kro.run/v1alpha1
+kind: EC2RunnerWithVPC
+metadata:
+  name: test-ec2-runner
+  namespace: default
+spec:
+  runnerName: test-ec2-runner
+  # Reference resources created by VPC Network ResourceGraph
+  subnetName: kro-test-subnet
+  securityGroupName: kro-test-sg
+  imageID: ami-000001
+  instanceType: t3.medium

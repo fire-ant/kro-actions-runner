@@ -6,9 +6,7 @@
 # which accompanies this distribution, and is available at
 # http://www.apache.org/licenses/LICENSE-2.0
 ##############################################################################
-
 version: "2"
-
 linters:
   default: standard
   enable:
@@ -19,7 +17,6 @@ linters:
     - ineffassign
   disable:
     - exhaustruct
-
 run:
   timeout: 5m
   tests: true

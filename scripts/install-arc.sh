@@ -13,7 +13,7 @@ set -euo pipefail
 CONTROLLER_NS="${CONTROLLER_NS:-arc-systems}"
 
 echo "Installing Actions Runner Controller in namespace ${CONTROLLER_NS}..."
-helm install arc \
+helm upgrade --install arc \
     --namespace "${CONTROLLER_NS}" \
     --create-namespace \
     --wait \
