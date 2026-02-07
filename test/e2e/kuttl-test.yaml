@@ -16,22 +16,22 @@ kindNodeCache: true
 # Kind cluster context name
 kindContext: kind-gha-arc-kro-runner
 # Kind cluster configuration
-kindConfig: test/fixtures/kind/kind-config.yaml
+kindConfig: test/kind/kind-config.yaml
 # Default namespace for tests
 namespace: arc-runners
 # Commands to run before tests (setup cluster)
 commands:
-  - command: test/scripts/install-kro.sh
+  - command: scripts/install-kro.sh
     ignoreFailure: false
-  - command: test/scripts/install-arc.sh
+  - command: scripts/install-arc.sh
     ignoreFailure: false
-  - command: test/scripts/load-image.sh
+  - command: scripts/load-image.sh
     ignoreFailure: false
   # Install LocalStack for EC2 runner tests (optional - required only for ec2-runner tests)
   # Set SKIP_EC2_TESTS=true to skip LocalStack/ACK installation and EC2 runner tests
-  - command: sh -c 'if [ "$SKIP_EC2_TESTS" != "true" ]; then test/scripts/install-localstack.sh; fi'
+  - command: sh -c 'if [ "$SKIP_EC2_TESTS" != "true" ]; then scripts/install-localstack.sh; fi'
     ignoreFailure: false
-  - command: sh -c 'if [ "$SKIP_EC2_TESTS" != "true" ]; then test/scripts/install-ack-ec2.sh; fi'
+  - command: sh -c 'if [ "$SKIP_EC2_TESTS" != "true" ]; then scripts/install-ack-ec2.sh; fi'
     ignoreFailure: false
 # Test directories to run (kar-integration first as primary test)
 testDirs:
