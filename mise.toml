@@ -321,44 +321,59 @@ run = [
 # Integration testing tasks
 [tasks."test:e2e"]
 description = "Run end-to-end kuttl tests"
-run = [
-    "mise run build",
-    "${DOCKER_CMD} build -t kro-actions-runner:latest .",
-    "kubectl kuttl test --config test/e2e/kuttl-test.yaml"
-]
+run = '''
+    set -e
+    mise run build
+    ${DOCKER_CMD} build -t kro-actions-runner:latest .
+    trap "ctlptl delete -f test/kind/ctlptl-kind-config.yaml || true" EXIT
+    ctlptl apply -f test/kind/ctlptl-kind-config.yaml
+    kubectl kuttl test --config test/e2e/kuttl-test.yaml
+'''
 
 [tasks."test:e2e:pod-runner"]
 description = "Run only pod-runner test case"
-run = [
-    "mise run build",
-    "${DOCKER_CMD} build -t kro-actions-runner:latest .",
-    "kubectl kuttl test --config test/e2e/kuttl-test.yaml --test pod-runner"
-]
+run = '''
+    set -e
+    mise run build
+    ${DOCKER_CMD} build -t kro-actions-runner:latest .
+    trap "ctlptl delete -f test/kind/ctlptl-kind-config.yaml || true" EXIT
+    ctlptl apply -f test/kind/ctlptl-kind-config.yaml
+    kubectl kuttl test --config test/e2e/kuttl-test.yaml --test pod-runner
+'''
 
 [tasks."test:e2e:kar"]
 description = "Run only kar binary integration test (main test)"
-run = [
-    "mise run build",
-    "${DOCKER_CMD} build -t kro-actions-runner:latest .",
-    "kubectl kuttl test --config test/e2e/kuttl-test.yaml --test kar-integration"
-]
+run = '''
+    set -e
+    mise run build
+    ${DOCKER_CMD} build -t kro-actions-runner:latest .
+    trap "ctlptl delete -f test/kind/ctlptl-kind-config.yaml || true" EXIT
+    ctlptl apply -f test/kind/ctlptl-kind-config.yaml
+    kubectl kuttl test --config test/e2e/kuttl-test.yaml --test kar-integration
+'''
 
 [tasks."test:e2e:ec2"]
 description = "Run only EC2 runner test case (requires LocalStack and ACK)"
-run = [
-    "mise run build",
-    "${DOCKER_CMD} build -t kro-actions-runner:latest .",
-    "kubectl kuttl test --config test/e2e/kuttl-test.yaml --test ec2-runner"
-]
+run = '''
+    set -e
+    mise run build
+    ${DOCKER_CMD} build -t kro-actions-runner:latest .
+    trap "ctlptl delete -f test/kind/ctlptl-kind-config.yaml || true" EXIT
+    ctlptl apply -f test/kind/ctlptl-kind-config.yaml
+    kubectl kuttl test --config test/e2e/kuttl-test.yaml --test ec2-runner
+'''
 
 [tasks."test:e2e:skip-ec2"]
 description = "Run all e2e tests except EC2 runner (no LocalStack required)"
 env = { SKIP_EC2_TESTS = "true" }
-run = [
-    "mise run build",
-    "${DOCKER_CMD} build -t kro-actions-runner:latest .",
-    "kubectl kuttl test --config test/e2e/kuttl-test.yaml"
-]
+run = '''
+    set -e
+    mise run build
+    ${DOCKER_CMD} build -t kro-actions-runner:latest .
+    trap "ctlptl delete -f test/kind/ctlptl-kind-config.yaml || true" EXIT
+    ctlptl apply -f test/kind/ctlptl-kind-config.yaml
+    kubectl kuttl test --config test/e2e/kuttl-test.yaml
+'''
 
 [tasks."test:integration"]
 description = "Run main kar integration test (fastest validation)"

@@ -9,17 +9,14 @@ parallel: 1
 # Don't delete resources after tests (useful for debugging)
 # Set to true in CI or when tests are stable
 skipDelete: false
-# Start a kind cluster automatically
-startKIND: true
-# Cache kind node images for faster startup
-kindNodeCache: true
+# Use existing cluster managed by ctlptl (don't let kuttl manage the cluster)
+startKIND: false
+skipClusterDelete: true
 # Kind cluster context name
 kindContext: kind-gha-arc-kro-runner
-# Kind cluster configuration
-kindConfig: test/kind/kind-config.yaml
 # Default namespace for tests
 namespace: arc-runners
-# Commands to run before tests (setup cluster)
+# Commands to run before tests (cluster must already exist)
 commands:
   - command: scripts/install-kro.sh
     ignoreFailure: false
