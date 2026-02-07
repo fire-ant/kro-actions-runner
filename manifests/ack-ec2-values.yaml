@@ -1,0 +1,30 @@
+# Helm values for ACK EC2 Controller configured for LocalStack
+# Simplified configuration without TLS complexity - uses plain HTTP
+# References: https://github.com/aws-controllers-k8s/ec2-controller
+aws:
+  region: us-east-1
+  account_id: "000000000000" # LocalStack default account ID
+  # Plain HTTP endpoint - no TLS needed for local development
+  endpoint_url: http://localstack.localstack.svc.cluster.local:4566
+  # Allow non-HTTPS endpoints
+  allow_unsafe_aws_endpoint_urls: true
+  # Dummy credentials (required by Helm chart but not validated by LocalStack)
+  credentials:
+    secretName: ack-ec2-user-secrets
+    secretKey: credentials
+    profile: default
+serviceAccount:
+  create: true
+  name: ack-ec2-controller
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+log:
+  level: info
+  enable_development_logging: true
+# Enable watching all namespaces for Instance resources
+watchNamespace: ""

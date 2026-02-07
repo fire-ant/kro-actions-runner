@@ -1,0 +1,9 @@
+apiVersion: kro.run/v1alpha1
+kind: VPCNetwork
+metadata:
+  name: test-vpc-network
+  namespace: default
+spec:
+  name: kro-test
+  cidrBlock: "10.0.0.0/16"
+  subnetCidrBlock: "10.0.1.0/24"

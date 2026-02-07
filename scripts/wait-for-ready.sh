@@ -18,7 +18,7 @@ RESOURCE_NAME="${2:-}"
 NAMESPACE="${3:-default}"
 TIMEOUT="${4:-300s}"
 
-if [[ -z "${RESOURCE_TYPE}" ]] || [[ -z "${RESOURCE_NAME}" ]]; then
+if [[ -z ${RESOURCE_TYPE} ]] || [[ -z ${RESOURCE_NAME} ]]; then
     echo "Usage: $0 <resource-type> <resource-name> <namespace> [timeout]"
     echo "Example: $0 deployment kro kro-system 300s"
     exit 1

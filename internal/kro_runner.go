@@ -413,7 +413,6 @@ func (r *KRORunner) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
-
 // toResourceName converts Kind to resource name (PodRunner -> podrunners)
 func toResourceName(kind string) string {
 	// Simple lowercase + s pluralization

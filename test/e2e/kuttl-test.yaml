@@ -9,34 +9,31 @@ parallel: 1
 # Don't delete resources after tests (useful for debugging)
 # Set to true in CI or when tests are stable
 skipDelete: false
-# Start a kind cluster automatically
-startKIND: true
-# Cache kind node images for faster startup
-kindNodeCache: true
+# Use existing cluster managed by ctlptl (don't let kuttl manage the cluster)
+startKIND: false
+skipClusterDelete: true
 # Kind cluster context name
-kindContext: kro-test
-# Kind cluster configuration
-kindConfig: test/fixtures/kind/kind-config.yaml
+kindContext: kind-gha-arc-kro-runner
 # Default namespace for tests
 namespace: arc-runners
-# Commands to run before tests (setup cluster)
+# Commands to run before tests (cluster must already exist)
 commands:
-  - command: test/scripts/install-kro.sh
+  - command: scripts/install-kro.sh
     ignoreFailure: false
-  - command: test/scripts/install-arc.sh
+  - command: scripts/install-arc.sh
     ignoreFailure: false
-  - command: test/scripts/load-image.sh
+  - command: scripts/load-image.sh
     ignoreFailure: false
   # Install LocalStack for EC2 runner tests (optional - required only for ec2-runner tests)
   # Set SKIP_EC2_TESTS=true to skip LocalStack/ACK installation and EC2 runner tests
-  - command: sh -c 'if [ "$SKIP_EC2_TESTS" != "true" ]; then test/scripts/install-localstack.sh; fi'
+  - command: sh -c 'if [ "$SKIP_EC2_TESTS" != "true" ]; then scripts/install-localstack.sh; fi'
     ignoreFailure: false
-  - command: sh -c 'if [ "$SKIP_EC2_TESTS" != "true" ]; then test/scripts/install-ack-ec2.sh; fi'
+  - command: sh -c 'if [ "$SKIP_EC2_TESTS" != "true" ]; then scripts/install-ack-ec2.sh; fi'
     ignoreFailure: false
 # Test directories to run (kar-integration first as primary test)
 testDirs:
-  - test/e2e/kar-integration/     # PRIMARY - Tests actual kar binary
+  - test/e2e/kar-integration/ # PRIMARY - Tests actual kar binary
   - test/e2e/pod-runner/
   - test/e2e/rgd-discovery/
   - test/e2e/rbac-validation/
-  - test/e2e/ec2-runner/          # EC2 runner with LocalStack (requires LocalStack/ACK)
+  - test/e2e/ec2-runner/ # EC2 runner with LocalStack (requires LocalStack/ACK)

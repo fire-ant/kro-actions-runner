@@ -109,6 +109,57 @@ See `examples/` for complete examples.
 | `ACTIONS_RUNNER_SCALE_SET_NAME` | Yes | Scale set name for RGD discovery |
 | `KAR_CLEANUP_TIMEOUT` | No | Cleanup timeout (default: 5m) |
 
+## EC2 Runners with LocalStack
+
+For testing EC2-based runners locally without AWS costs, we support LocalStack + ACK EC2 integration.
+
+### Architecture
+
+Two-tier ResourceGraph approach:
+
+1. **Infrastructure Layer** (deploy once): VPC, Subnet, Security Group
+2. **Application Layer** (ephemeral): EC2 runner instances
+
+```
+GitHub Workflow → ARC creates JIT Secret
+    ↓
+EC2RunnerWithVPC ResourceGraph
+    ↓ (references secret via ${string(jitSecret.data[".jitconfig"])})
+    ↓
+KRO creates ACK EC2 Instance
+    ↓ (JIT config injected into userData)
+    ↓
+LocalStack EC2 Service (or real AWS)
+    ↓
+GitHub Actions runner executes workflow
+```
+
+### Quick Start with LocalStack
+
+```bash
+# Complete development setup (creates cluster, installs everything)
+mise run dev:setup
+
+# Deploy VPC infrastructure (once)
+kubectl apply -f examples/ec2-runner/test-vpc-network.yaml
+
+# Create test runner with JIT config
+kubectl apply -f examples/ec2-runner/test-ec2-runner-secret.yaml
+kubectl apply -f examples/ec2-runner/test-ec2-runner-instance.yaml
+
+# Watch instance creation
+mise run ec2:watch-instances
+```
+
+### Key Features
+
+- **JIT Config Injection**: Kubernetes secrets automatically injected into EC2 userData via CEL expression
+- **VPC Reuse**: One VPC Network serves many ephemeral runners
+- **LocalStack Testing**: Test EC2 workflows without AWS costs
+- **Production Ready**: Same RGDs work with real AWS (switch to Secrets Manager for production)
+
+See [examples/README.md](examples/README.md) for more examples and detailed guides.
+
 ## Development
 
 This project uses [mise](https://mise.jdx.dev) for tool management.
@@ -122,9 +173,24 @@ mise run test
 
 # Build
 mise run build
+
+# Development cluster setup
+mise run dev:setup
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+## Testing
+
+```bash
+# Integration tests
+mise run test:e2e
+
+# EC2 LocalStack tests
+mise run ec2:test
+```
+
+See [test/README.md](test/README.md) for comprehensive testing documentation.
 
 ## License
 

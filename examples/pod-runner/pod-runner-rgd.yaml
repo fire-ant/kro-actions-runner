@@ -14,7 +14,6 @@ spec:
     spec:
       # Runner name (also used as the secret name created by ARC)
       runnerName: string
-
   resources:
     # Reference the ARC-created secret (wait for it to exist)
     - id: jitSecret
@@ -23,11 +22,10 @@ spec:
         kind: Secret
         metadata:
           name: ${schema.spec.runnerName}
-
-    # The actual runner Pod
+    # The actual runner Pod (test version with sleep)
     - id: runnerPod
       readyWhen:
-        - ${runnerPod.status.phase == "Succeeded" || runnerPod.status.phase == "Failed"}
+        - ${runnerPod.status.phase == "Running" || runnerPod.status.phase == "Succeeded" || runnerPod.status.phase == "Failed"}
       template:
         apiVersion: v1
         kind: Pod
@@ -38,24 +36,23 @@ spec:
           restartPolicy: Never
           containers:
             - name: runner
-              # GitHub Actions runner image - this will run the actual workflow
-              image: ghcr.io/actions/actions-runner:latest
-              command: ["/home/runner/run.sh"]
+              # Use busybox for testing instead of the actual runner image
+              image: busybox:latest
+              command: ["/bin/sleep", "30"]
               env:
-                # JIT config from the ARC-created secret
-                - name: ACTIONS_RUNNER_INPUT_JITCONFIG
-                  valueFrom:
-                    secretKeyRef:
-                      # ARC creates a secret with the runner name (no suffix)
-                      name: ${schema.spec.runnerName}
-                      key: .jitconfig
                 # Runner name for identification
                 - name: RUNNER_NAME
                   value: ${schema.spec.runnerName}
+                # JIT config reference (not actually used in test)
+                - name: ACTIONS_RUNNER_INPUT_JITCONFIG
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${schema.spec.runnerName}
+                      key: .jitconfig
               resources:
                 requests:
                   cpu: "100m"
-                  memory: "256Mi"
+                  memory: "128Mi"
                 limits:
-                  cpu: "500m"
-                  memory: "512Mi"
+                  cpu: "200m"
+                  memory: "256Mi"

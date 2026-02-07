@@ -10,16 +10,17 @@
 
 set -euo pipefail
 
-CLUSTER_NAME="${KIND_CLUSTER_NAME:-kro-test}"
-IMAGE="${IMAGE:-kro-actions-runner:latest}"
+echo "Installing KRO..."
+helm upgrade --install kro oci://registry.k8s.io/kro/charts/kro \
+    --namespace kro-system \
+    --create-namespace \
+    --wait \
+    --timeout=5m
 
-echo "Loading image ${IMAGE} into kind cluster ${CLUSTER_NAME}..."
+echo "Waiting for KRO deployment to be available..."
+kubectl wait --for=condition=available \
+    --timeout=300s \
+    deployment.apps/kro \
+    -n kro-system
 
-# Check if image exists
-if ! docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^${IMAGE}$"; then
-    echo "Error: Image ${IMAGE} not found. Build it first with: docker build -t ${IMAGE} ."
-    exit 1
-fi
-
-kind load docker-image "${IMAGE}" --name "${CLUSTER_NAME}"
-echo "Image loaded successfully"
+echo "KRO installed successfully"
