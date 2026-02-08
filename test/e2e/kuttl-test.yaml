@@ -20,9 +20,9 @@ namespace: arc-runners
 # Note: Cluster setup (KRO, ARC, LocalStack, ACK) is handled by Tilt/ctlptl
 # Tests assume cluster is already provisioned with all dependencies
 commands:
-  - command: kubectl apply -f examples/ec2-runner/vpc-network-simple-rgd.yaml
+  - command: kubectl apply -f examples/ec2-runner/ec2-runner-infra-rgd.yaml
     ignoreFailure: false
-  - command: kubectl apply -f examples/ec2-runner/ec2-runner-unified-rgd.yaml
+  - command: kubectl apply -f examples/ec2-runner/ec2-runner-config-rgd.yaml
     ignoreFailure: false
 # Test directories to run (kar-integration first as primary test)
 testDirs:
