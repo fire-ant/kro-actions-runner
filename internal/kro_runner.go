@@ -145,7 +145,7 @@ func (r *KRORunner) findRGDByLabels(ctx context.Context, labels map[string]strin
 	for k, v := range labels {
 		selectors = append(selectors, fmt.Sprintf("%s=%s", k, v))
 	}
-	selector := fmt.Sprintf("%s", selectors[0])
+	selector := selectors[0]
 	for i := 1; i < len(selectors); i++ {
 		selector = fmt.Sprintf("%s,%s", selector, selectors[i])
 	}
