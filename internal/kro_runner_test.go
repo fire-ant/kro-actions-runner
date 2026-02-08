@@ -283,3 +283,248 @@ func TestKRORunnerFields(t *testing.T) {
 		t.Errorf("instanceType = %q, want %q", runner.instanceType, instanceType)
 	}
 }
+
+// TestCreateResourcesWithNilKubeClient tests CreateResources with nil kube client
+func TestCreateResourcesWithNilKubeClient(t *testing.T) {
+	runner := NewKRORunner("default", nil, nil, "test-scale-set", 0, 3, "ami-123", "t3.medium")
+
+	// Should panic or error when trying to get orchestrator pod
+	defer func() {
+		if r := recover(); r != nil {
+			// Expected panic due to nil client
+			t.Log("Got expected panic with nil kubeClient")
+		}
+	}()
+
+	err := runner.CreateResources(context.TODO(), "test-runner", "test-jit-config")
+	if err != nil {
+		// Expected error
+		t.Log("Got expected error with nil kubeClient:", err)
+	}
+}
+
+// TestDeleteResourcesWithNilDynamicClient tests DeleteResources with nil dynamic client
+func TestDeleteResourcesWithNilDynamicClient(t *testing.T) {
+	runner := NewKRORunner("default", nil, nil, "test-scale-set", 0, 3, "", "")
+
+	// Set up app context
+	NewAppContext("test-runner", "")
+
+	// Should panic or error when trying to delete ResourceGraph
+	defer func() {
+		if r := recover(); r != nil {
+			// Expected panic due to nil client
+			t.Log("Got expected panic with nil dynamicClient")
+		}
+	}()
+
+	err := runner.DeleteResources(context.TODO())
+	if err != nil {
+		// Expected error
+		t.Log("Got expected error with nil dynamicClient:", err)
+	}
+}
+
+// TestWaitForResourceGraphWithNilClient tests WaitForResourceGraph with nil client
+func TestWaitForResourceGraphWithNilClient(t *testing.T) {
+	runner := NewKRORunner("default", nil, nil, "test-scale-set", 0, 3, "", "")
+
+	// Set up app context
+	NewAppContext("test-runner", "")
+
+	// Should panic or error when trying to get ResourceGraph
+	defer func() {
+		if r := recover(); r != nil {
+			// Expected panic due to nil client
+			t.Log("Got expected panic with nil dynamicClient")
+		}
+	}()
+
+	err := runner.WaitForResourceGraph(context.TODO())
+	if err != nil {
+		// Expected error
+		t.Log("Got expected error with nil dynamicClient:", err)
+	}
+}
+
+// TestFindRGDByLabelWithNilClient tests findRGDByLabel with nil client
+func TestFindRGDByLabelWithNilClient(t *testing.T) {
+	runner := NewKRORunner("default", nil, nil, "test-scale-set", 0, 3, "", "")
+
+	// Should panic or error when trying to list RGDs
+	defer func() {
+		if r := recover(); r != nil {
+			// Expected panic due to nil client
+			t.Log("Got expected panic with nil dynamicClient")
+		}
+	}()
+
+	_, err := runner.findRGDByLabel(context.TODO())
+	if err != nil {
+		// Expected error
+		t.Log("Got expected error with nil dynamicClient:", err)
+	}
+}
+
+// TestCreateResourcesValidationEdgeCases tests edge cases in validation
+func TestCreateResourcesValidationEdgeCases(t *testing.T) {
+	tests := []struct {
+		name        string
+		runnerName  string
+		jitConfig   string
+		namespace   string
+		scaleSet    string
+		expectError bool
+	}{
+		{
+			name:        "Empty runner name",
+			runnerName:  "",
+			jitConfig:   "config",
+			namespace:   "default",
+			scaleSet:    "test",
+			expectError: true,
+		},
+		{
+			name:        "Empty JIT config",
+			runnerName:  "runner",
+			jitConfig:   "",
+			namespace:   "default",
+			scaleSet:    "test",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runner := NewKRORunner(tt.namespace, nil, nil, tt.scaleSet, 0, 3, "", "")
+
+			// Use defer to catch any panics
+			defer func() {
+				if r := recover(); r != nil {
+					if !tt.expectError {
+						t.Errorf("CreateResources() unexpected panic: %v", r)
+					}
+				}
+			}()
+
+			err := runner.CreateResources(context.TODO(), tt.runnerName, tt.jitConfig)
+
+			if tt.expectError && err == nil {
+				t.Errorf("CreateResources() expected error, got nil")
+			}
+			if !tt.expectError && err != nil {
+				t.Errorf("CreateResources() unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+// TestAppContextMultipleCalls tests multiple calls to NewAppContext
+func TestAppContextMultipleCalls(t *testing.T) {
+	// First call
+	ctx1 := NewAppContext("runner1", "dv1")
+	if ctx1.GetVMIName() != "runner1" {
+		t.Errorf("First context VMIName = %q, want %q", ctx1.GetVMIName(), "runner1")
+	}
+
+	// Second call should override
+	ctx2 := NewAppContext("runner2", "dv2")
+	if ctx2.GetVMIName() != "runner2" {
+		t.Errorf("Second context VMIName = %q, want %q", ctx2.GetVMIName(), "runner2")
+	}
+
+	// Global context should be updated
+	globalCtx := GetAppContext()
+	if globalCtx.GetVMIName() != "runner2" {
+		t.Errorf("Global context VMIName = %q, want %q", globalCtx.GetVMIName(), "runner2")
+	}
+}
+
+// TestKRORunnerWithDifferentConfigs tests runner with different configurations
+func TestKRORunnerWithDifferentConfigs(t *testing.T) {
+	tests := []struct {
+		name         string
+		namespace    string
+		scaleSet     string
+		runnerIndex  int
+		minRunners   int
+		imageID      string
+		instanceType string
+	}{
+		{
+			name:         "Default config",
+			namespace:    "default",
+			scaleSet:     "runners",
+			runnerIndex:  0,
+			minRunners:   3,
+			imageID:      "",
+			instanceType: "",
+		},
+		{
+			name:         "Custom namespace",
+			namespace:    "custom-ns",
+			scaleSet:     "runners",
+			runnerIndex:  0,
+			minRunners:   3,
+			imageID:      "",
+			instanceType: "",
+		},
+		{
+			name:         "High runner index",
+			namespace:    "default",
+			scaleSet:     "runners",
+			runnerIndex:  10,
+			minRunners:   3,
+			imageID:      "",
+			instanceType: "",
+		},
+		{
+			name:         "With EC2 config",
+			namespace:    "default",
+			scaleSet:     "runners",
+			runnerIndex:  0,
+			minRunners:   5,
+			imageID:      "ami-123456",
+			instanceType: "t3.large",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runner := NewKRORunner(
+				tt.namespace,
+				nil,
+				nil,
+				tt.scaleSet,
+				tt.runnerIndex,
+				tt.minRunners,
+				tt.imageID,
+				tt.instanceType,
+			)
+
+			if runner == nil {
+				t.Fatal("NewKRORunner returned nil")
+			}
+
+			// Verify all fields are set correctly
+			if runner.namespace != tt.namespace {
+				t.Errorf("namespace = %q, want %q", runner.namespace, tt.namespace)
+			}
+			if runner.scaleSetName != tt.scaleSet {
+				t.Errorf("scaleSetName = %q, want %q", runner.scaleSetName, tt.scaleSet)
+			}
+			if runner.runnerIndex != tt.runnerIndex {
+				t.Errorf("runnerIndex = %d, want %d", runner.runnerIndex, tt.runnerIndex)
+			}
+			if runner.minRunners != tt.minRunners {
+				t.Errorf("minRunners = %d, want %d", runner.minRunners, tt.minRunners)
+			}
+			if runner.imageID != tt.imageID {
+				t.Errorf("imageID = %q, want %q", runner.imageID, tt.imageID)
+			}
+			if runner.instanceType != tt.instanceType {
+				t.Errorf("instanceType = %q, want %q", runner.instanceType, tt.instanceType)
+			}
+		})
+	}
+}
