@@ -16,19 +16,11 @@ skipClusterDelete: true
 kindContext: kind-gha-arc-kro-runner
 # Default namespace for tests
 namespace: arc-runners
-# Commands to run before tests (cluster must already exist)
+# Commands to run before tests
+# Install KRO first so tests can apply RGDs
+# Each test handles its own RGD installation based on what it needs
 commands:
-  - command: scripts/install-kro.sh
-    ignoreFailure: false
-  - command: scripts/install-arc.sh
-    ignoreFailure: false
-  - command: scripts/load-image.sh
-    ignoreFailure: false
-  # Install LocalStack for EC2 runner tests (optional - required only for ec2-runner tests)
-  # Set SKIP_EC2_TESTS=true to skip LocalStack/ACK installation and EC2 runner tests
-  - command: sh -c 'if [ "$SKIP_EC2_TESTS" != "true" ]; then scripts/install-localstack.sh; fi'
-    ignoreFailure: false
-  - command: sh -c 'if [ "$SKIP_EC2_TESTS" != "true" ]; then scripts/install-ack-ec2.sh; fi'
+  - command: helm install kro oci://registry.k8s.io/kro/charts/kro --version 0.8.4 --namespace kro-system --create-namespace --wait
     ignoreFailure: false
 # Test directories to run (kar-integration first as primary test)
 testDirs:

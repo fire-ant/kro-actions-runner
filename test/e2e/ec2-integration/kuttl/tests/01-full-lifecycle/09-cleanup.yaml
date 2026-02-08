@@ -1,0 +1,37 @@
+# Step 9: Final cleanup
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      set -e
+      NAMESPACE=arc-runners
+      SCALE_SET_NAME=integration-test-runners
+
+      echo "=== Final Cleanup ==="
+      echo ""
+
+      echo "Deleting runner pods from adoption test..."
+      kubectl delete pod ${SCALE_SET_NAME}-0 ${SCALE_SET_NAME}-1 ${SCALE_SET_NAME}-2 -n $NAMESPACE --ignore-not-found
+
+      echo ""
+      echo "Waiting for EC2Runners to be garbage collected..."
+      sleep 10
+
+      echo ""
+      echo "Cleaning up LocalStack (restarting to clear in-memory state)..."
+      kubectl rollout restart deployment -n localstack localstack
+      kubectl rollout status deployment -n localstack localstack --timeout=60s
+      echo "  ✅ LocalStack restarted"
+
+      echo ""
+      echo "✅ Test complete!"
+      echo ""
+      echo "📊 Test Summary:"
+      echo "  ✅ VPC infrastructure created"
+      echo "  ✅ 5 instances created (3 reusable, 2 ephemeral)"
+      echo "  ✅ Reusable instances have adoption and retention policies"
+      echo "  ✅ Ephemeral instances terminated after job completion"
+      echo "  ✅ Reusable instances retained after job completion"
+      echo "  ✅ Reusable instances successfully adopted on second job"
+      echo ""
+      echo "🎉 All tests passed!"

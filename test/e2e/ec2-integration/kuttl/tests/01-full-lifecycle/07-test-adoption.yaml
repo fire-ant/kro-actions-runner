@@ -1,0 +1,77 @@
+# Step 7: Test instance adoption (verify warm pool reuse)
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      set -e
+      NAMESPACE=arc-runners
+      SCALE_SET_NAME=integration-test-runners
+
+      echo "=== Testing Instance Adoption (Warm Pool Reuse) ==="
+      echo ""
+      echo "Creating new runner pods with same indices to test adoption..."
+      echo ""
+
+      # Function to create a runner pod
+      create_runner() {
+        local RUNNER_NAME=$1
+        local RUNNER_INDEX=$2
+        local JIT_CONFIG=$3
+
+        echo "Creating runner pod: $RUNNER_NAME (index $RUNNER_INDEX)"
+
+        # JIT secret should already exist from previous run
+        kubectl create secret generic "${SCALE_SET_NAME}-${RUNNER_INDEX}" \
+          -n ${NAMESPACE} \
+          --from-literal=.jitconfig="${JIT_CONFIG}" \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+        # Create pod
+        kubectl apply -f - <<EOF
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: ${RUNNER_NAME}
+        namespace: ${NAMESPACE}
+        labels:
+          actions.github.com/scale-set-name: "${SCALE_SET_NAME}"
+          runner-index: "${RUNNER_INDEX}"
+      spec:
+        serviceAccountName: kar-test
+        restartPolicy: Never
+        containers:
+          - name: runner
+            image: localhost:5005/kro-actions-runner:latest
+            imagePullPolicy: IfNotPresent
+            env:
+              - name: ACTIONS_RUNNER_SCALE_SET_NAME
+                value: "${SCALE_SET_NAME}"
+              - name: RUNNER_NAME
+                value: "${RUNNER_NAME}"
+              - name: ACTIONS_RUNNER_INPUT_JITCONFIG
+                value: "${JIT_CONFIG}"
+              - name: KAR_WAIT_INDEFINITELY
+                value: "true"
+              - name: KAR_CLEANUP_TIMEOUT
+                value: "300s"
+              - name: KAR_RUNNER_INDEX
+                value: "${RUNNER_INDEX}"
+              - name: KAR_MIN_RUNNERS
+                value: "3"
+              - name: KAR_IMAGE_ID
+                value: "ami-test-runner"
+              - name: KAR_INSTANCE_TYPE
+                value: "t3.micro"
+      EOF
+      }
+
+      # Only recreate reusable runners (0, 1, 2) to test adoption
+      # Don't recreate ephemeral runners (3, 4) as their instances were terminated
+      create_runner "${SCALE_SET_NAME}-0" "0" "eyJydW5uZXJOYW1lIjoicnVubmVyLTAiLCJ1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vdGVzdC1vcmcvdGVzdC1yZXBvIiwidG9rZW4iOiJ0b2tlbi1uZXctMCJ9"
+      create_runner "${SCALE_SET_NAME}-1" "1" "eyJydW5uZXJOYW1lIjoicnVubmVyLTEiLCJ1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vdGVzdC1vcmcvdGVzdC1yZXBvIiwidG9rZW4iOiJ0b2tlbi1uZXctMSJ9"
+      create_runner "${SCALE_SET_NAME}-2" "2" "eyJydW5uZXJOYW1lIjoicnVubmVyLTIiLCJ1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vdGVzdC1vcmcvdGVzdC1yZXBvIiwidG9rZW4iOiJ0b2tlbi1uZXctMiJ9"
+
+      echo ""
+      echo "✅ Runner pods created for adoption test"
+      echo "Waiting for EC2Runners to be created..."
+      sleep 10

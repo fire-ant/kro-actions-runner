@@ -27,23 +27,27 @@ import (
 )
 
 func installFlags(flags *pflag.FlagSet, cmdOptions *Opts) {
-	v := viper.New()
-	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-	v.AutomaticEnv()
+	// Note: Don't use viper here - flags are already set in main.go from environment variables
+	// This just registers the flags for cobra's help text and flag parsing
 
 	// KRO RGD discovery
-	flags.StringVarP(&cmdOptions.ScaleSetName, "scale-set-name", "s", "",
+	flags.StringVarP(&cmdOptions.ScaleSetName, "scale-set-name", "s", cmdOptions.ScaleSetName,
 		"The scale set name for RGD discovery. Uses label matching.")
 
 	// Runner configuration
-	flags.StringVarP(&cmdOptions.RunnerName, "runner-name", "r", "runner",
+	flags.StringVarP(&cmdOptions.RunnerName, "runner-name", "r", cmdOptions.RunnerName,
 		"The name of the runner.")
-	flags.StringVarP(&cmdOptions.JitConfig, "actions-runner-input-jitconfig", "c", "",
+	flags.StringVarP(&cmdOptions.JitConfig, "actions-runner-input-jitconfig", "c", cmdOptions.JitConfig,
 		"The opaque JIT runner config.")
+
+	// Test/simulation mode
+	flags.BoolVar(&cmdOptions.WaitIndefinitely, "wait-indefinitely", cmdOptions.WaitIndefinitely,
+		"Keep resources alive indefinitely until terminated (for testing)")
 }
 
 func initializeConfig(cmd *cobra.Command) error {
 	v := viper.New()
+	v.SetEnvPrefix("KAR") // Look for KAR_* environment variables
 	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	v.AutomaticEnv()
 

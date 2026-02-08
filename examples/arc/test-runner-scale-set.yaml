@@ -1,0 +1,32 @@
+# Test AutoScalingRunnerSet configuration for integration tests
+# This creates a mock scale set without connecting to GitHub
+# GitHub credentials secret (using dummy values for testing)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: integration-test-runners-github-secret
+  namespace: arc-runners
+type: Opaque
+stringData:
+  github_token: "test-token-not-real"
+
+# Helm values for the runner scale set
+# In production, install via: helm install <name> oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
+#   --namespace arc-runners --values runner-scale-set-values.yaml
+---
+# For testing, we'll create the AutoScalingRunnerSet directly
+# Note: In production, this would be created by the gha-runner-scale-set Helm chart
+apiVersion: actions.github.com/v1alpha1
+kind: AutoscalingRunnerSet
+metadata:
+  name: integration-test-runners
+  namespace: arc-runners
+  labels:
+    actions.github.com/scale-set-name: integration-test-runners
+spec:
+  githubConfigUrl: "https://github.com/test-org/test-repo"
+  githubConfigSecret: integration-test-runners-github-secret
+  # Max runners allows bursting beyond min
+  maxRunners: 10
+  # Min runners creates a warm pool
+  minRunners: 3

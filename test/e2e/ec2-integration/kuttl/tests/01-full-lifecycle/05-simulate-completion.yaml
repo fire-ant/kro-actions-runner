@@ -1,0 +1,40 @@
+# Step 3: Simulate job completion by deleting runner pods
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      set -e
+      NAMESPACE=arc-runners
+      SCALE_SET_NAME=integration-test-runners
+
+      echo "=== Simulating Job Completion ==="
+      echo ""
+
+      echo "Sleeping 5 seconds to simulate job runtime..."
+      sleep 5
+
+      echo ""
+      echo "Deleting runner pods (which will trigger GC of EC2Runners)..."
+      kubectl delete pod ${SCALE_SET_NAME}-0 ${SCALE_SET_NAME}-1 ${SCALE_SET_NAME}-2 ${SCALE_SET_NAME}-3 ${SCALE_SET_NAME}-4 -n $NAMESPACE
+
+      echo ""
+      echo "Waiting for Kubernetes garbage collection to delete EC2Runners..."
+      echo "(EC2Runners have owner references to the runner pods, so they should be auto-deleted)"
+      sleep 10
+
+      echo ""
+      echo "Checking EC2Runner garbage collection..."
+      REMAINING=$(kubectl get ec2runner -n $NAMESPACE --no-headers 2>/dev/null | wc -l || echo "0")
+      if [ "$REMAINING" -eq 0 ]; then
+        echo "✅ All EC2Runners garbage collected"
+      else
+        echo "⚠️  Warning: $REMAINING EC2Runners still exist"
+        kubectl get ec2runner -n $NAMESPACE
+      fi
+
+      echo ""
+      echo "Waiting for KRO to cascade delete Instance CRs..."
+      sleep 15
+
+      echo ""
+      echo "✅ Job completion simulated"

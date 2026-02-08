@@ -32,6 +32,12 @@ dictionary.dic
 .env
 .env.local
 
+# LocalStack/ACK generated manifests
+manifests/
+
+# local kubeconfig files
+kubeconfig
+
 # OS
 .DS_Store
 Thumbs.db

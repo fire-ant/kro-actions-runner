@@ -1,0 +1,133 @@
+# EC2RunnerConfig RGD - Configures EC2 runner instances
+# Supports both warm pool (reusable) and burst (ephemeral) instances based on runnerIndex
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: ec2-runner-config
+  labels:
+    actions.github.com/scale-set-name: "integration-test-runners"
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: EC2RunnerConfig
+    spec:
+      # Core runner identity
+      scaleSetName: string # ARC scale set name (e.g., "my-runners")
+      runnerIndex: integer # From ARC pod ordinal (0, 1, 2, ...)
+      # Scaling configuration (from ARC ScaleSet)
+      minRunners: integer | default = 3 # Warm pool size
+      # Instance configuration
+      imageID: string | default = "ami-000001"
+      instanceType: string | default = "t3.medium"
+  resources:
+    # Reference the EC2RunnerInfra to establish dependency
+    # VPC resources are discovered by scaleSetName (EC2RunnerInfra creates them with this naming pattern)
+    - id: vpcNetwork
+      externalRef:
+        apiVersion: kro.run/v1alpha1
+        kind: EC2RunnerInfra
+        metadata:
+          name: ${schema.spec.scaleSetName}-vpc
+    # Reference subnet created by EC2RunnerInfra
+    # Named as ${scaleSetName}-subnet and labeled with actions.github.com/scale-set-name
+    - id: subnet
+      externalRef:
+        apiVersion: ec2.services.k8s.aws/v1alpha1
+        kind: Subnet
+        metadata:
+          name: ${schema.spec.scaleSetName}-subnet
+    # Reference security group created by EC2RunnerInfra
+    # Named as ${scaleSetName}-sg and labeled with actions.github.com/scale-set-name
+    - id: securityGroup
+      externalRef:
+        apiVersion: ec2.services.k8s.aws/v1alpha1
+        kind: SecurityGroup
+        metadata:
+          name: ${schema.spec.scaleSetName}-sg
+    # Reference JIT config secret (created by ARC or test)
+    - id: jitSecret
+      externalRef:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: ${schema.spec.scaleSetName}-${string(schema.spec.runnerIndex)}
+    # REUSABLE INSTANCE (index < minRunners)
+    # - Persistent instance with adoption and retention policies
+    # - Consistent name enables adoption by name on subsequent jobs
+    # - Instance retained when ResourceGraph deleted, reused for future jobs
+    - id: warmInstance
+      includeWhen:
+        - ${schema.spec.runnerIndex < schema.spec.minRunners}
+      readyWhen:
+        - ${warmInstance.status.state.name == "running"}
+      template:
+        apiVersion: ec2.services.k8s.aws/v1alpha1
+        kind: Instance
+        metadata:
+          name: ${schema.spec.scaleSetName}-${string(schema.spec.runnerIndex)}
+          labels:
+            kro.run/instance-type: reusable
+            kro.run/runner-index: "${string(schema.spec.runnerIndex)}"
+            actions.github.com/scale-set-name: "${schema.spec.scaleSetName}"
+          annotations:
+            # ACK Adoption: Adopt existing instance by name if it exists
+            services.k8s.aws/adoption-policy: adopt-or-create
+            # ACK Deletion Policy: Retain EC2 instance when K8s CR deleted
+            services.k8s.aws/deletion-policy: retain
+        spec:
+          instanceType: ${schema.spec.instanceType}
+          imageID: ${schema.spec.imageID}
+          subnetRef:
+            from:
+              name: ${subnet.metadata.name}
+          securityGroups:
+            - ${securityGroup.spec.name}
+          # Inject JIT config via userData
+          userData: ${string(jitSecret.data[".jitconfig"])}
+          tags:
+            - key: Name
+              value: ${schema.spec.scaleSetName}-${string(schema.spec.runnerIndex)}
+            - key: kro.run/instance-type
+              value: reusable
+            - key: kro.run/runner-index
+              value: "${string(schema.spec.runnerIndex)}"
+            - key: actions.github.com/scale-set-name
+              value: "${schema.spec.scaleSetName}"
+    # EPHEMERAL INSTANCE (index >= minRunners)
+    # - Created fresh for each job
+    # - No adoption or retention policies (default ACK behavior)
+    # - Instance terminated when ResourceGraph deleted
+    - id: burstInstance
+      includeWhen:
+        - ${schema.spec.runnerIndex >= schema.spec.minRunners}
+      readyWhen:
+        - ${burstInstance.status.state.name == "running"}
+      template:
+        apiVersion: ec2.services.k8s.aws/v1alpha1
+        kind: Instance
+        metadata:
+          name: ${schema.spec.scaleSetName}-${string(schema.spec.runnerIndex)}
+          labels:
+            kro.run/instance-type: ephemeral
+            kro.run/runner-index: "${string(schema.spec.runnerIndex)}"
+            actions.github.com/scale-set-name: "${schema.spec.scaleSetName}"
+            # No annotations - default behavior (create new, delete on cleanup)
+        spec:
+          instanceType: ${schema.spec.instanceType}
+          imageID: ${schema.spec.imageID}
+          subnetRef:
+            from:
+              name: ${subnet.metadata.name}
+          securityGroups:
+            - ${securityGroup.spec.name}
+          # Inject JIT config via userData
+          userData: ${string(jitSecret.data[".jitconfig"])}
+          tags:
+            - key: Name
+              value: ${schema.spec.scaleSetName}-${string(schema.spec.runnerIndex)}
+            - key: kro.run/instance-type
+              value: ephemeral
+            - key: kro.run/runner-index
+              value: "${string(schema.spec.runnerIndex)}"
+            - key: actions.github.com/scale-set-name
+              value: "${schema.spec.scaleSetName}"

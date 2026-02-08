@@ -59,7 +59,7 @@ func TestNewRootCommand(t *testing.T) {
 		JitConfig:    "test-jit-config",
 	}
 
-	cmd := NewRootCommand(ctx, runner, opts)
+	cmd := NewRootCommand(ctx, runner, &opts)
 	if cmd == nil {
 		t.Fatal("NewRootCommand returned nil")
 	}

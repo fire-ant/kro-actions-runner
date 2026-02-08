@@ -19,3 +19,8 @@ rules:
   indentation:
     spaces: 2
     indent-sequences: true
+  # Disable document-start requirement (not needed for our use case)
+  document-start: disable
+  # Allow flexible comment spacing
+  comments:
+    min-spaces-from-content: 1

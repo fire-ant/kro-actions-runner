@@ -1,0 +1,40 @@
+# Assert that all 5 runner pods are Running
+apiVersion: v1
+kind: Pod
+metadata:
+  name: integration-test-runners-0
+  namespace: arc-runners
+status:
+  phase: Running
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: integration-test-runners-1
+  namespace: arc-runners
+status:
+  phase: Running
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: integration-test-runners-2
+  namespace: arc-runners
+status:
+  phase: Running
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: integration-test-runners-3
+  namespace: arc-runners
+status:
+  phase: Running
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: integration-test-runners-4
+  namespace: arc-runners
+status:
+  phase: Running

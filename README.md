@@ -160,6 +160,121 @@ mise run ec2:watch-instances
 
 See [examples/README.md](examples/README.md) for more examples and detailed guides.
 
+## Warm Pool for Fast GPU Instance Scheduling
+
+Pre-create and maintain a pool of warm instances to eliminate cold-start latency for expensive GPU instances.
+
+### Why Warm Pools?
+
+- **Faster Job Start**: <30 seconds vs 2-5 minutes for cold EC2 instance provisioning
+- **Cost-Effective for GPUs**: Idle GPU instances are cheaper than repeated provisioning cycles
+- **Instance Availability**: Reserve instances in your account to avoid capacity issues
+- **ARC Integration**: Leverages ARC's `minRunners` for pod management
+
+### Architecture
+
+Two-RGD strategy:
+- **Warm Pool RGD** (`ec2-runner-warmpool`): Persistent, reusable instances
+- **Burst RGD** (`ec2-runner-burst`): Ephemeral instances (fallback when pool exhausted)
+
+```
+GitHub Job → ARC (manages minRunners/maxRunners)
+              ↓
+         kar discovers available RGDs
+              ↓
+         Priority 1: Warm Pool RGD
+              ├─ Query for AVAILABLE instance
+              ├─ Claim instance atomically
+              └─ Inject JIT config
+              ↓
+         Priority 2: Burst RGD (fallback)
+              └─ Create new ephemeral instance
+```
+
+### Quick Start
+
+```bash
+# Complete setup (cluster, ARC ScaleSet, warm pool)
+mise run dev:setup
+mise run warmpool:setup
+
+# Check warm pool status
+mise run warmpool:status
+
+# Monitor instances
+kubectl get instances -l kro.run/pool-type=warmpool -n arc-runners
+```
+
+See [examples/warm-pool/README.md](examples/warm-pool/README.md) for detailed documentation and manual setup.
+
+### Configuration
+
+Align warm pool size with ARC's `minRunners`:
+
+```yaml
+# ARC Scale Set values.yaml
+minRunners: 3        # Keeps 3 warm pods running
+maxRunners: 10       # Can burst to 10 total
+
+# Warm Pool: Create 3 instances to match minRunners
+# Burst: Handles runners 4-10 when pool exhausted
+```
+
+### Instance Lifecycle
+
+```
+AVAILABLE → CLAIMED → IN-USE → AVAILABLE (returned to pool)
+```
+
+- **AVAILABLE**: Running, warm, ready for jobs (no JIT config)
+- **CLAIMED**: Reserved by kar, JIT config being injected
+- **IN-USE**: Actively running GitHub Actions job
+- **Returned**: Job complete, cleaned and returned to pool
+
+Burst instances: Created fresh per job, deleted after completion.
+
+### Cost Analysis
+
+**GPU Instance Example** (g4dn.xlarge at $0.526/hour):
+- Cold start: 3-5 minutes
+- Warm start: 10-30 seconds
+- Break-even: ~3 jobs/hour
+
+**Use warm pools for:**
+- GPU instances (high startup cost)
+- Frequent jobs (>3 per hour)
+- Long-running jobs (startup >10% of job duration)
+
+**Skip warm pools for:**
+- CPU instances (fast startup)
+- Infrequent jobs (<1 per hour)
+- Short jobs (<2 minutes)
+
+### Troubleshooting
+
+Monitor pool capacity:
+```bash
+# Check available instances
+kubectl get instances -l kro.run/pool-state=AVAILABLE -n arc-runners
+
+# Check in-use instances
+kubectl get instances -l kro.run/pool-state=IN-USE -n arc-runners
+
+# View instance details
+kubectl describe instance warmpool-001 -n arc-runners
+```
+
+Verify kar claiming logic:
+```bash
+# Check kar logs for claim attempts
+kubectl logs -l app=kar-runner -n arc-runners | grep -i "claim"
+
+# Verify instance return to pool
+kubectl logs -l app=kar-runner -n arc-runners --previous | grep -i "returned"
+```
+
+See [test/e2e/warm-pool/README.md](test/e2e/warm-pool/README.md) for testing and validation.
+
 ## Development
 
 This project uses [mise](https://mise.jdx.dev) for tool management.

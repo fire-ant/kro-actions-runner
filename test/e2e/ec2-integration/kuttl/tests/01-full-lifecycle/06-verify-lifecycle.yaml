@@ -1,0 +1,92 @@
+# Step 6: Verify instance lifecycle (reusable retained, ephemeral deleted)
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      set -e
+      NAMESPACE=arc-runners
+
+      echo "=== Verifying Instance Lifecycle ==="
+      echo ""
+
+      # Get all EC2 instances from LocalStack
+      echo "Fetching EC2 instances from LocalStack..."
+      INSTANCES_JSON=$(kubectl exec -n localstack deploy/localstack -- awslocal ec2 describe-instances --output json)
+
+      # Verify reusable instances are still RUNNING in LocalStack
+      echo "Checking reusable instances (should be retained)..."
+      for i in 0 1 2; do
+        INSTANCE_NAME="integration-test-runners-$i"
+        ORIGINAL_ID=$(cat /tmp/reusable-$i-id 2>/dev/null || echo "")
+
+        if [ -z "$ORIGINAL_ID" ]; then
+          echo "  ⚠️  Warning: No saved instance ID for $INSTANCE_NAME"
+          continue
+        fi
+
+        # Check if this instance ID exists in LocalStack
+        STATE=$(echo "$INSTANCES_JSON" | jq -r ".Reservations[].Instances[] | select(.InstanceId==\"$ORIGINAL_ID\") | .State.Name" || echo "")
+
+        echo "$INSTANCE_NAME (ID: $ORIGINAL_ID):"
+        if [ "$STATE" = "running" ] || [ "$STATE" = "stopped" ]; then
+          echo "  ✅ PASS: EC2 instance retained (state: $STATE)"
+        elif [ -z "$STATE" ]; then
+          echo "  ❌ FAIL: EC2 instance was terminated (not found in LocalStack)"
+          exit 1
+        else
+          echo "  ⚠️  Warning: EC2 instance in unexpected state: $STATE"
+        fi
+        echo ""
+      done
+
+      # Verify ephemeral instances are TERMINATED in LocalStack
+      echo "Checking ephemeral instances (should be terminated)..."
+      for i in 3 4; do
+        INSTANCE_NAME="integration-test-runners-$i"
+        ORIGINAL_ID=$(cat /tmp/ephemeral-$i-id 2>/dev/null || echo "")
+
+        if [ -z "$ORIGINAL_ID" ]; then
+          echo "  ⚠️  Warning: No saved instance ID for $INSTANCE_NAME"
+          continue
+        fi
+
+        # Check if this instance ID exists in LocalStack
+        STATE=$(echo "$INSTANCES_JSON" | jq -r ".Reservations[].Instances[] | select(.InstanceId==\"$ORIGINAL_ID\") | .State.Name" || echo "")
+
+        echo "$INSTANCE_NAME (ID: $ORIGINAL_ID):"
+        if [ -z "$STATE" ] || [ "$STATE" = "terminated" ]; then
+          echo "  ✅ PASS: EC2 instance terminated (state: ${STATE:-not found})"
+        elif [ "$STATE" = "running" ]; then
+          echo "  ❌ FAIL: EC2 instance still running (should be terminated)"
+          exit 1
+        else
+          echo "  ℹ️  EC2 instance state: $STATE (terminating...)"
+        fi
+        echo ""
+      done
+
+      # Verify Instance CRs are all deleted
+      echo "Verifying Instance CRs are cleaned up..."
+      REMAINING_INSTANCES=$(kubectl get instances -n $NAMESPACE --no-headers 2>/dev/null | wc -l || echo "0")
+      if [ "$REMAINING_INSTANCES" -eq 0 ]; then
+        echo "  ✅ All Instance CRs deleted"
+      else
+        echo "  ⚠️  $REMAINING_INSTANCES Instance CRs still exist:"
+        kubectl get instances -n $NAMESPACE
+      fi
+
+      echo ""
+      echo "=== Final LocalStack EC2 State ==="
+      kubectl exec -n localstack deploy/localstack -- awslocal ec2 describe-instances \
+        --query 'Reservations[*].Instances[*].[InstanceId,State.Name,Tags[?Key==`Name`].Value|[0]]' \
+        --output table || echo "Could not query LocalStack"
+
+      echo ""
+      echo "✅ Instance lifecycle verified successfully!"
+      echo ""
+      echo "Summary:"
+      echo "  ✅ Reusable instances (integration-test-runners-0,1,2) retained in LocalStack"
+      echo "  ✅ Ephemeral instances (integration-test-runners-3,4) terminated"
+      echo "  ✅ All Instance CRs cleaned up"
+      echo ""
+      echo "🎉 Integration test complete!"

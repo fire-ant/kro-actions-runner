@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -98,6 +99,7 @@ func main() {
 	pflag.StringVar(&opts.ScaleSetName, "scale-set-name", os.Getenv("ACTIONS_RUNNER_SCALE_SET_NAME"), "Scale set name")
 	pflag.StringVar(&opts.RunnerName, "runner-name", os.Getenv("RUNNER_NAME"), "Runner name")
 	pflag.StringVar(&opts.JitConfig, "actions-runner-input-jitconfig", os.Getenv("ACTIONS_RUNNER_INPUT_JITCONFIG"), "JIT config")
+	pflag.BoolVar(&opts.WaitIndefinitely, "wait-indefinitely", os.Getenv("KAR_WAIT_INDEFINITELY") == "true", "Wait indefinitely (for testing)")
 	pflag.Parse()
 
 	// Get kubeconfig and namespace
@@ -131,7 +133,27 @@ func main() {
 		log.Fatalf("cannot create kubernetes client: %v\n", err)
 	}
 
-	r := runner.NewKRORunner(namespace, dynamicClient, kubeClient, opts.ScaleSetName)
+	// Read configuration from environment
+	imageID := os.Getenv("KAR_IMAGE_ID")
+	instanceType := os.Getenv("KAR_INSTANCE_TYPE")
+
+	// Parse runner index from environment
+	runnerIndex := 0
+	if idx := os.Getenv("KAR_RUNNER_INDEX"); idx != "" {
+		if parsed, err := strconv.Atoi(idx); err == nil {
+			runnerIndex = parsed
+		}
+	}
+
+	// Parse minRunners from environment
+	minRunners := 3 // default
+	if min := os.Getenv("KAR_MIN_RUNNERS"); min != "" {
+		if parsed, err := strconv.Atoi(min); err == nil {
+			minRunners = parsed
+		}
+	}
+
+	r := runner.NewKRORunner(namespace, dynamicClient, kubeClient, opts.ScaleSetName, runnerIndex, minRunners, imageID, instanceType)
 
 	log.Printf("cleanup timeout is set to: %s", getCleanupTimeout())
 
@@ -150,7 +172,7 @@ func main() {
 		}
 	}()
 
-	rootCmd := app.NewRootCommand(ctx, r, opts)
+	rootCmd := app.NewRootCommand(ctx, r, &opts)
 
 	if err := rootCmd.Execute(); err != nil && !errors.Is(errors.Cause(err), context.Canceled) {
 		log.Println("execute command failed:", err)

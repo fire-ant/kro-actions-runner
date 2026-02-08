@@ -1,26 +1,30 @@
+# EC2RunnerInfra RGD - VPC infrastructure for EC2 runners
+# Creates VPC, subnet, security group, and internet gateway
+# All VPC resources are automatically labeled with the scale-set name
 apiVersion: kro.run/v1alpha1
 kind: ResourceGraphDefinition
 metadata:
-  name: vpc-network
+  name: ec2-runner-infra
 spec:
   schema:
     apiVersion: v1alpha1
-    kind: VPCNetwork
+    kind: EC2RunnerInfra
     spec:
-      # VPC CIDR block
+      # Scale set name - will be used to label all resources
+      scaleSetName: string
+      # VPC configuration
       cidrBlock: string | default = "10.0.0.0/16"
-      # Subnet CIDR block
       subnetCidrBlock: string | default = "10.0.1.0/24"
-      # Name tag for resources
-      name: string
   resources:
-    # VPC
+    # VPC - labeled with scale-set name
     - id: vpc
       template:
         apiVersion: ec2.services.k8s.aws/v1alpha1
         kind: VPC
         metadata:
-          name: ${schema.spec.name}-vpc
+          name: ${schema.spec.scaleSetName}-vpc
+          labels:
+            actions.github.com/scale-set-name: ${schema.spec.scaleSetName}
         spec:
           cidrBlocks:
             - ${schema.spec.cidrBlock}
@@ -28,28 +32,34 @@ spec:
           enableDNSHostnames: true
           tags:
             - key: Name
-              value: ${schema.spec.name}-vpc
+              value: ${schema.spec.scaleSetName}-vpc
+            - key: actions.github.com/scale-set-name
+              value: ${schema.spec.scaleSetName}
     # Internet Gateway
     - id: internetGateway
       template:
         apiVersion: ec2.services.k8s.aws/v1alpha1
         kind: InternetGateway
         metadata:
-          name: ${schema.spec.name}-igw
+          name: ${schema.spec.scaleSetName}-igw
+          labels:
+            actions.github.com/scale-set-name: ${schema.spec.scaleSetName}
         spec:
           vpcRef:
             from:
               name: ${vpc.metadata.name}
           tags:
             - key: Name
-              value: ${schema.spec.name}-igw
-    # Subnet
+              value: ${schema.spec.scaleSetName}-igw
+    # Subnet - automatically labeled
     - id: subnet
       template:
         apiVersion: ec2.services.k8s.aws/v1alpha1
         kind: Subnet
         metadata:
-          name: ${schema.spec.name}-subnet
+          name: ${schema.spec.scaleSetName}-subnet
+          labels:
+            actions.github.com/scale-set-name: ${schema.spec.scaleSetName}
         spec:
           cidrBlock: ${schema.spec.subnetCidrBlock}
           vpcRef:
@@ -57,17 +67,21 @@ spec:
               name: ${vpc.metadata.name}
           tags:
             - key: Name
-              value: ${schema.spec.name}-subnet
-    # Security Group
+              value: ${schema.spec.scaleSetName}-subnet
+            - key: actions.github.com/scale-set-name
+              value: ${schema.spec.scaleSetName}
+    # Security Group - automatically labeled
     - id: securityGroup
       template:
         apiVersion: ec2.services.k8s.aws/v1alpha1
         kind: SecurityGroup
         metadata:
-          name: ${schema.spec.name}-sg
+          name: ${schema.spec.scaleSetName}-sg
+          labels:
+            actions.github.com/scale-set-name: ${schema.spec.scaleSetName}
         spec:
-          name: ${schema.spec.name}-sg
-          description: Security group for ${schema.spec.name}
+          name: ${schema.spec.scaleSetName}-sg
+          description: Security group for ${schema.spec.scaleSetName}
           vpcRef:
             from:
               name: ${vpc.metadata.name}
@@ -85,4 +99,6 @@ spec:
                   description: "Allow all outbound"
           tags:
             - key: Name
-              value: ${schema.spec.name}-sg
+              value: ${schema.spec.scaleSetName}-sg
+            - key: actions.github.com/scale-set-name
+              value: ${schema.spec.scaleSetName}
