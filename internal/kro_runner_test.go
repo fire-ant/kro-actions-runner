@@ -252,3 +252,34 @@ func TestRGDInfo(t *testing.T) {
 		t.Errorf("RGDInfo.Kind = %q, want %q", info.Kind, "PodRunner")
 	}
 }
+
+// TestKRORunnerFields tests that KRORunner fields are properly set
+func TestKRORunnerFields(t *testing.T) {
+	namespace := "test-ns"
+	scaleSetName := "test-scale-set"
+	runnerIndex := 5
+	minRunners := 3
+	imageID := "ami-123"
+	instanceType := "t3.large"
+
+	runner := NewKRORunner(namespace, nil, nil, scaleSetName, runnerIndex, minRunners, imageID, instanceType)
+
+	if runner.namespace != namespace {
+		t.Errorf("namespace = %q, want %q", runner.namespace, namespace)
+	}
+	if runner.scaleSetName != scaleSetName {
+		t.Errorf("scaleSetName = %q, want %q", runner.scaleSetName, scaleSetName)
+	}
+	if runner.runnerIndex != runnerIndex {
+		t.Errorf("runnerIndex = %d, want %d", runner.runnerIndex, runnerIndex)
+	}
+	if runner.minRunners != minRunners {
+		t.Errorf("minRunners = %d, want %d", runner.minRunners, minRunners)
+	}
+	if runner.imageID != imageID {
+		t.Errorf("imageID = %q, want %q", runner.imageID, imageID)
+	}
+	if runner.instanceType != instanceType {
+		t.Errorf("instanceType = %q, want %q", runner.instanceType, instanceType)
+	}
+}
