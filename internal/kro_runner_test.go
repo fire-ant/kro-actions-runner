@@ -717,15 +717,14 @@ func TestWaitForResourceGraphContextCancellation(t *testing.T) {
 
 // TestRunnerInterface tests that KRORunner implements Runner interface
 func TestRunnerInterface(t *testing.T) {
+	// Compile-time check that KRORunner implements Runner
 	var _ Runner = (*KRORunner)(nil)
 
 	runner := NewKRORunner("default", nil, nil, "test-scale-set", 0, 3, "", "")
 
-	// Verify runner implements Runner interface methods
+	// Verify runner can be assigned to Runner interface
 	var r Runner = runner
-	if r == nil {
-		t.Fatal("KRORunner does not implement Runner interface")
-	}
+	_ = r // Use the variable to avoid unused variable error
 }
 
 // TestKRORunnerRegion tests that region is set correctly
