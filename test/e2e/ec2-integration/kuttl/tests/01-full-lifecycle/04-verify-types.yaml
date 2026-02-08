@@ -96,7 +96,8 @@ commands:
       done
 
       echo "=== Instance Summary ==="
-      kubectl get instances -n $NAMESPACE -o custom-columns='NAME:.metadata.name,ID:.status.instanceID,TYPE:.metadata.labels.kro\.run/instance-type,INDEX:.metadata.labels.kro\.run/runner-index,STATE:.status.state.name'
+      kubectl get instances -n $NAMESPACE \
+        -o custom-columns='NAME:.metadata.name,ID:.status.instanceID,TYPE:.metadata.labels.kro\.run/instance-type,INDEX:.metadata.labels.kro\.run/runner-index,STATE:.status.state.name'
 
       echo ""
       echo "✅ All instances verified successfully!"
