@@ -17,12 +17,10 @@ kindContext: kind-gha-arc-kro-runner
 # Default namespace for tests
 namespace: arc-runners
 # Commands to run before tests
-# Note: Cluster setup (KRO, ARC, LocalStack, ACK) is handled by Tilt/ctlptl
-# Tests assume cluster is already provisioned with all dependencies
+# Install KRO first so tests can apply RGDs
+# Each test handles its own RGD installation based on what it needs
 commands:
-  - command: kubectl apply -f examples/ec2-runner/ec2-runner-infra-rgd.yaml
-    ignoreFailure: false
-  - command: kubectl apply -f examples/ec2-runner/ec2-runner-config-rgd.yaml
+  - command: helm install kro oci://registry.k8s.io/kro/charts/kro --version 0.8.4 --namespace kro-system --create-namespace --wait
     ignoreFailure: false
 # Test directories to run (kar-integration first as primary test)
 testDirs:
