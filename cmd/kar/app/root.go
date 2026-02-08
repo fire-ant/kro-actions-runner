@@ -24,19 +24,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewRootCommand(ctx context.Context, r interface{}, opts Opts) *cobra.Command {
+func NewRootCommand(ctx context.Context, r interface{}, opts *Opts) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "kar",
 		Short: "Tool that creates a GitHub Self-Host runner with KRO or Kubevirt",
-		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			return initializeConfig(cmd)
-		},
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return run(ctx, r, opts)
+			return run(ctx, r, *opts)
 		},
 	}
 
-	installFlags(cmd.Flags(), &opts)
+	installFlags(cmd.Flags(), opts)
 
 	return cmd
 }
@@ -63,6 +60,14 @@ func run(ctx context.Context, r interface{}, opts Opts) error {
 	}
 
 	log.Println("ResourceGraph runner completed successfully")
+
+	// If WaitIndefinitely is set, wait for context cancellation (SIGTERM/SIGINT)
+	// This is useful for testing/simulation where we want the pod to stay alive
+	if opts.WaitIndefinitely {
+		log.Println("WaitIndefinitely mode: keeping resources alive until terminated")
+		<-ctx.Done()
+		log.Println("Context cancelled, cleaning up resources")
+	}
 
 	if err := kroRunner.DeleteResources(ctx); err != nil {
 		return errors.Wrap(err, "fail to delete resources")

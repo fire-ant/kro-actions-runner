@@ -1,0 +1,13 @@
+# Step 0: Setup VPC Network
+# This provides the subnet and security group that EC2 instances will use
+# VPC resources are automatically labeled with the scale-set name
+# Naming convention: ${scaleSetName}-vpc
+apiVersion: kro.run/v1alpha1
+kind: EC2RunnerInfra
+metadata:
+  name: integration-test-runners-vpc
+  namespace: arc-runners
+spec:
+  scaleSetName: integration-test-runners
+  cidrBlock: "10.0.0.0/16"
+  subnetCidrBlock: "10.0.1.0/24"

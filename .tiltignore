@@ -1,0 +1,51 @@
+# Tilt ignore patterns - exclude files/dirs from watch
+# Similar to .dockerignore
+
+# Git
+.git/
+.github/
+
+# Build artifacts
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test artifacts
+*.test
+*.out
+coverage.txt
+kubeconfig
+
+# Documentation
+*.md
+docs/
+LICENSE
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Kubernetes
+*.kubeconfig
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Node modules (if any)
+node_modules/
+
+# Test data
+test/data/
+testdata/
+
+# Compiled Object files
+*.o
+*.a

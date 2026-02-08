@@ -30,6 +30,7 @@ kind = "latest"
 helm = "latest"
 kuttl = "latest"
 ctlptl = "latest"
+tilt = "latest"
 
 # AWS tools
 awscli = "latest"
@@ -106,6 +107,13 @@ description = "Build and push the kro-actions-runner image"
 depends = ["image:build"]
 run = "mise run image:push"
 
+[tasks."image:load"]
+description = "Build and load the image into kind cluster (faster than push for local dev)"
+run = [
+    "${DOCKER_CMD} build -t ${IMAGE_NAME}:${IMAGE_TAG} .",
+    "kind load docker-image ${IMAGE_NAME}:${IMAGE_TAG} --name ${KIND_CLUSTER_NAME}"
+]
+
 [tasks.clean]
 description = "Clean build artifacts"
 run = "rm -rf bin/"
@@ -134,28 +142,42 @@ run = [
 description = "Delete kind cluster and registry using ctlptl"
 run = "ctlptl delete -f test/kind/ctlptl-kind-config.yaml"
 
-[tasks."cluster:setup"]
-description = "Set up cluster with KRO, ARC, and prerequisites"
-depends = ["cluster:create"]
+[tasks.up]
+description = "One-time cluster setup (build and deploy, then exit)"
 run = [
-    "scripts/install-kro.sh",
-    "scripts/install-arc.sh",
-    "scripts/load-image.sh"
+    "echo '🚀 Setting up development cluster'",
+    "echo ''",
+    "mise run cluster:create",
+    "echo ''",
+    "echo '📦 Building and deploying services...'",
+    "tilt ci",
+    "echo ''",
+    "echo '✨ Cluster setup complete!'",
+    "echo ''",
+    "echo 'Next steps:'",
+    "echo '  - Run \"mise dev\" for live reload during development'",
+    "echo '  - Run \"kubectl get pods -A\" to verify resources'",
+    "echo '  - Run \"mise run cluster:verify\" to check all components'"
 ]
 
-[tasks."cluster:setup:localstack"]
-description = "Set up cluster with KRO, ARC, LocalStack, and ACK EC2 controller (deprecated: use cluster:setup:full)"
-depends = ["cluster:setup"]
+[tasks.dev]
+description = "Start development environment with live reload (Tilt watch mode)"
 run = [
-    "scripts/install-localstack.sh",
-    "scripts/install-ack-ec2.sh"
+    "echo '🚀 Starting development environment'",
+    "echo ''",
+    "mise run cluster:create",
+    "echo ''",
+    "echo '👀 Starting Tilt with live reload...'",
+    "echo 'Press Ctrl+C to stop'",
+    "echo ''",
+    "tilt up --stream"
 ]
 
 [tasks."cluster:reset"]
 description = "Delete and recreate cluster from scratch"
 run = [
     "mise run cluster:delete || true",
-    "mise run cluster:setup"
+    "mise up"
 ]
 
 [tasks."cluster:logs"]
@@ -178,10 +200,6 @@ run = [
 ]
 
 # LocalStack tasks
-[tasks."localstack:deploy"]
-description = "Deploy LocalStack to cluster"
-run = "scripts/install-localstack.sh"
-
 [tasks."localstack:logs"]
 description = "Show LocalStack logs"
 run = "kubectl logs -n localstack -l app=localstack --tail=100 -f"
@@ -204,13 +222,30 @@ description = "Open shell in LocalStack pod"
 run = "kubectl exec -it -n localstack deploy/localstack -- /bin/bash"
 
 # ACK tasks
-[tasks."ack:install"]
-description = "Install ACK EC2 controller"
-run = "scripts/install-ack-ec2.sh"
+[tasks."ack:install:secretsmanager"]
+description = "Install ACK Secrets Manager controller"
+run = "scripts/install-ack-secretsmanager.sh"
 
 [tasks."ack:logs"]
 description = "Show ACK EC2 controller logs"
 run = "kubectl logs -n ack-system -l app.kubernetes.io/name=ec2-chart --tail=100 -f"
+
+[tasks."ack:logs:secretsmanager"]
+description = "Show ACK Secrets Manager controller logs"
+run = "kubectl logs -n ack-system -l app.kubernetes.io/name=secretsmanager-chart --tail=100 -f"
+
+[tasks."ack:status"]
+description = "Show status of all ACK controllers"
+run = [
+    "echo '=== ACK Controllers ==='",
+    "kubectl get pods -n ack-system",
+    "echo ''",
+    "echo '=== ACK EC2 Resources ==='",
+    "kubectl get instances -A",
+    "echo ''",
+    "echo '=== ACK Secrets Manager Resources ==='",
+    "kubectl get secrets.secretsmanager.services.k8s.aws -A"
+]
 
 # EC2 tasks
 [tasks."ec2:tag-ami"]
@@ -276,38 +311,7 @@ run = [
     "echo '=== Cluster verification complete ==='",
 ]
 
-[tasks."cluster:setup:full"]
-description = "Complete cluster setup with LocalStack and ACK"
-depends = ["cluster:setup"]
-run = [
-    "scripts/install-localstack.sh",
-    "scripts/install-ack-ec2.sh",
-    "echo ''",
-    "echo '=== Full cluster setup complete ==='",
-    "mise run cluster:verify"
-]
-
 # Development workflow tasks
-[tasks."dev:setup"]
-description = "Complete development environment setup (idempotent with ctlptl)"
-run = [
-    "echo '=== Starting development setup ==='",
-    "mise run cluster:create",
-    "mise run cluster:setup",
-    "mise run localstack:deploy",
-    "mise run ack:install",
-    "echo ''",
-    "echo '=== Building and pushing kro-actions-runner image ==='",
-    "mise run build",
-    "mise run image:build-push",
-    "echo ''",
-    "echo '=== Tagging runner image as AMI ==='",
-    "mise run ec2:tag-ami",
-    "echo ''",
-    "echo '=== Development setup complete ==='",
-    "mise run cluster:verify"
-]
-
 [tasks."dev:quick"]
 description = "Quick development workflow (rebuild and push)"
 run = [
@@ -318,7 +322,7 @@ run = [
     "echo 'Image: ${REGISTRY_HOST}/${IMAGE_NAME}:${IMAGE_TAG}'"
 ]
 
-# Integration testing tasks
+
 [tasks."test:e2e"]
 description = "Run end-to-end kuttl tests"
 run = '''
@@ -363,6 +367,17 @@ run = '''
     kubectl kuttl test --config test/e2e/kuttl-test.yaml --test ec2-runner
 '''
 
+[tasks."test:e2e:warm-pool"]
+description = "Run warm pool test case (requires LocalStack and ACK)"
+run = '''
+    set -e
+    mise run build
+    ${DOCKER_CMD} build -t kro-actions-runner:latest .
+    trap "ctlptl delete -f test/kind/ctlptl-kind-config.yaml || true" EXIT
+    ctlptl apply -f test/kind/ctlptl-kind-config.yaml
+    kubectl kuttl test --config test/e2e/kuttl-test.yaml --test warm-pool
+'''
+
 [tasks."test:e2e:skip-ec2"]
 description = "Run all e2e tests except EC2 runner (no LocalStack required)"
 env = { SKIP_EC2_TESTS = "true" }
@@ -378,6 +393,27 @@ run = '''
 [tasks."test:integration"]
 description = "Run main kar integration test (fastest validation)"
 depends = ["test:e2e:kar"]
+
+[tasks."test:ec2:install-rgds"]
+description = "Install EC2 test resources (RGDs, namespace, RBAC)"
+run = [
+    "kubectl create namespace arc-runners --dry-run=client -o yaml | kubectl apply -f -",
+    "kubectl apply -f test/e2e/ec2-integration/kuttl/tests/01-full-lifecycle/00-rbac.yaml",
+    "kubectl apply -f examples/ec2-runner/ec2-runner-infra-rgd.yaml",
+    "kubectl apply -f examples/ec2-runner/ec2-runner-config-rgd.yaml",
+    "kubectl apply -f test/e2e/ec2-integration/kuttl/tests/01-full-lifecycle/00-setup.yaml",
+    "echo 'Waiting for RGDs to be ready...'",
+    "sleep 5"
+]
+
+[tasks."test:ec2:integration"]
+description = "Run EC2 Runner integration test (unified RGD full lifecycle)"
+depends = ["test:ec2:clean", "test:ec2:install-rgds"]
+run = "kubectl kuttl test --config test/e2e/ec2-integration/kuttl/kuttl-test.yaml"
+
+[tasks."test:ec2:clean"]
+description = "Clean up EC2 integration test resources"
+run = "scripts/clean-ec2-test.sh arc-runners"
 
 [tasks."test:all"]
 description = "Run unit and integration tests"

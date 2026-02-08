@@ -16,19 +16,13 @@ skipClusterDelete: true
 kindContext: kind-gha-arc-kro-runner
 # Default namespace for tests
 namespace: arc-runners
-# Commands to run before tests (cluster must already exist)
+# Commands to run before tests
+# Note: Cluster setup (KRO, ARC, LocalStack, ACK) is handled by Tilt/ctlptl
+# Tests assume cluster is already provisioned with all dependencies
 commands:
-  - command: scripts/install-kro.sh
+  - command: kubectl apply -f examples/ec2-runner/vpc-network-simple-rgd.yaml
     ignoreFailure: false
-  - command: scripts/install-arc.sh
-    ignoreFailure: false
-  - command: scripts/load-image.sh
-    ignoreFailure: false
-  # Install LocalStack for EC2 runner tests (optional - required only for ec2-runner tests)
-  # Set SKIP_EC2_TESTS=true to skip LocalStack/ACK installation and EC2 runner tests
-  - command: sh -c 'if [ "$SKIP_EC2_TESTS" != "true" ]; then scripts/install-localstack.sh; fi'
-    ignoreFailure: false
-  - command: sh -c 'if [ "$SKIP_EC2_TESTS" != "true" ]; then scripts/install-ack-ec2.sh; fi'
+  - command: kubectl apply -f examples/ec2-runner/ec2-runner-unified-rgd.yaml
     ignoreFailure: false
 # Test directories to run (kar-integration first as primary test)
 testDirs:

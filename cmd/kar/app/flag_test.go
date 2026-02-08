@@ -55,10 +55,10 @@ func TestInstallFlags(t *testing.T) {
 		t.Error("Short flag 'c' for actions-runner-input-jitconfig was not registered correctly")
 	}
 
-	// Check default value for runner-name
+	// Check default value for runner-name (should be empty since it comes from env vars)
 	runnerNameFlag := flags.Lookup("runner-name")
-	if runnerNameFlag.DefValue != "runner" {
-		t.Errorf("runner-name default value = %q, want %q", runnerNameFlag.DefValue, "runner")
+	if runnerNameFlag.DefValue != "" {
+		t.Errorf("runner-name default value = %q, want %q", runnerNameFlag.DefValue, "")
 	}
 }
 

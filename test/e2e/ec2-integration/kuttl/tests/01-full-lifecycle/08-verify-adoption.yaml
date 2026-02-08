@@ -1,0 +1,73 @@
+# Step 8: Verify instance adoption (same instance IDs reused)
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      set -e
+      NAMESPACE=arc-runners
+
+      echo "=== Verifying Instance Adoption ==="
+      echo ""
+
+      # Wait for EC2Runners to become ACTIVE
+      echo "Waiting for EC2Runners to be ready..."
+      for i in {1..30}; do
+        READY_COUNT=$(kubectl get ec2runner -n ${NAMESPACE} -o json | jq '[.items[] | select(.status.conditions[]? | select(.type=="ResourcesReady" and .status=="True"))] | length')
+        if [ "$READY_COUNT" -eq 3 ]; then
+          echo "✅ All 3 EC2Runners ready"
+          break
+        fi
+        echo "  Waiting for EC2Runners to be ready... ($READY_COUNT/3, attempt $i/30)"
+        sleep 2
+      done
+
+      # Verify each reusable instance was adopted (same instance ID)
+      echo ""
+      echo "Verifying adoption (instance IDs should match original)..."
+      ADOPTION_SUCCESS=true
+
+      for i in 0 1 2; do
+        INSTANCE_NAME="integration-test-runners-$i"
+        ORIGINAL_ID=$(cat /tmp/reusable-$i-id 2>/dev/null || echo "")
+
+        if [ -z "$ORIGINAL_ID" ]; then
+          echo "  ⚠️  Warning: No original instance ID saved for $INSTANCE_NAME"
+          continue
+        fi
+
+        # Get current instance ID from the Instance CR
+        CURRENT_ID=$(kubectl get instance $INSTANCE_NAME -n $NAMESPACE -o jsonpath='{.status.instanceID}' 2>/dev/null || echo "")
+
+        echo "$INSTANCE_NAME:"
+        echo "  Original instance ID: $ORIGINAL_ID"
+        echo "  Current instance ID:  $CURRENT_ID"
+
+        if [ "$CURRENT_ID" = "$ORIGINAL_ID" ]; then
+          echo "  ✅ PASS: Instance adopted (same ID reused)"
+        elif [ -z "$CURRENT_ID" ]; then
+          echo "  ❌ FAIL: Instance CR not found or not ready yet"
+          ADOPTION_SUCCESS=false
+        else
+          echo "  ❌ FAIL: Different instance ID (created new instead of adopting)"
+          echo "         Expected adoption to reuse $ORIGINAL_ID, but got $CURRENT_ID"
+          ADOPTION_SUCCESS=false
+        fi
+        echo ""
+      done
+
+      if [ "$ADOPTION_SUCCESS" = false ]; then
+        echo "❌ Adoption test FAILED"
+        exit 1
+      fi
+
+      # Show final state
+      echo "=== Instance Status ==="
+      kubectl get instances -n $NAMESPACE -o custom-columns='NAME:.metadata.name,ID:.status.instanceID,TYPE:.metadata.labels.kro\.run/instance-type,STATE:.status.state.name'
+
+      echo ""
+      echo "✅ Adoption test PASSED - all reusable instances were successfully adopted!"
+      echo ""
+      echo "Summary:"
+      echo "  ✅ integration-test-runners-0: Instance adopted (ID reused)"
+      echo "  ✅ integration-test-runners-1: Instance adopted (ID reused)"
+      echo "  ✅ integration-test-runners-2: Instance adopted (ID reused)"

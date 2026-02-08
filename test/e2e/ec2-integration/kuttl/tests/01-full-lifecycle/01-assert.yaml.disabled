@@ -1,0 +1,53 @@
+# Wait for all EC2 instances to be running
+
+# Reusable instances (integration-test-runners-0, 1, 2)
+apiVersion: ec2.services.k8s.aws/v1alpha1
+kind: Instance
+metadata:
+  name: integration-test-runners-0
+  namespace: arc-runners
+status:
+  instanceID: i-*
+  state:
+    name: running
+---
+apiVersion: ec2.services.k8s.aws/v1alpha1
+kind: Instance
+metadata:
+  name: integration-test-runners-1
+  namespace: arc-runners
+status:
+  instanceID: i-*
+  state:
+    name: running
+---
+apiVersion: ec2.services.k8s.aws/v1alpha1
+kind: Instance
+metadata:
+  name: integration-test-runners-2
+  namespace: arc-runners
+status:
+  instanceID: i-*
+  state:
+    name: running
+---
+# Ephemeral instances (integration-test-runners-3, 4)
+apiVersion: ec2.services.k8s.aws/v1alpha1
+kind: Instance
+metadata:
+  name: integration-test-runners-3
+  namespace: arc-runners
+status:
+  instanceID: i-*
+  state:
+    name: running
+---
+apiVersion: ec2.services.k8s.aws/v1alpha1
+kind: Instance
+metadata:
+  name: integration-test-runners-4
+  namespace: arc-runners
+status:
+  instanceID: i-*
+  state:
+    name: running

@@ -105,23 +105,52 @@ type KRORunner struct {
 	kubeClient    kubernetes.Interface
 	namespace     string
 	scaleSetName  string
+	region        string
+	runnerIndex   int
+	minRunners    int
+	imageID       string
+	instanceType  string
 }
 
 var _ Runner = (*KRORunner)(nil)
 
 // NewKRORunner creates a new KRO-based runner
-func NewKRORunner(namespace string, dynamicClient dynamic.Interface, kubeClient kubernetes.Interface, scaleSetName string) *KRORunner {
+func NewKRORunner(namespace string, dynamicClient dynamic.Interface, kubeClient kubernetes.Interface, scaleSetName string, runnerIndex int, minRunners int, imageID string, instanceType string) *KRORunner {
 	return &KRORunner{
 		namespace:     namespace,
 		dynamicClient: dynamicClient,
 		kubeClient:    kubeClient,
 		scaleSetName:  scaleSetName,
+		runnerIndex:   runnerIndex,
+		minRunners:    minRunners,
+		imageID:       imageID,
+		instanceType:  instanceType,
+		// Use default region matching RGD defaults (us-east-1)
+		// This should match the region configured in the RGD spec
+		region: "us-east-1",
 	}
 }
 
 // findRGDByLabel discovers an RGD by matching the actions.github.com/scale-set-name label
 func (r *KRORunner) findRGDByLabel(ctx context.Context) (*RGDInfo, error) {
-	log.Printf("Discovering RGD with label %s=%s", rgdLabelKey, r.scaleSetName)
+	return r.findRGDByLabels(ctx, map[string]string{
+		rgdLabelKey: r.scaleSetName,
+	})
+}
+
+// findRGDByLabels discovers an RGD by matching multiple label criteria
+func (r *KRORunner) findRGDByLabels(ctx context.Context, labels map[string]string) (*RGDInfo, error) {
+	// Build label selector from map
+	var selectors []string
+	for k, v := range labels {
+		selectors = append(selectors, fmt.Sprintf("%s=%s", k, v))
+	}
+	selector := fmt.Sprintf("%s", selectors[0])
+	for i := 1; i < len(selectors); i++ {
+		selector = fmt.Sprintf("%s,%s", selector, selectors[i])
+	}
+
+	log.Printf("Discovering RGD with labels: %s", selector)
 
 	rgdGVR := schema.GroupVersionResource{
 		Group:    "kro.run",
@@ -129,20 +158,21 @@ func (r *KRORunner) findRGDByLabel(ctx context.Context) (*RGDInfo, error) {
 		Resource: "resourcegraphdefinitions",
 	}
 
-	// List all RGDs with matching label
+	// List all RGDs with matching labels
 	rgdList, err := r.dynamicClient.Resource(rgdGVR).List(ctx, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", rgdLabelKey, r.scaleSetName),
+		LabelSelector: selector,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list RGDs")
 	}
 
 	if len(rgdList.Items) == 0 {
-		return nil, fmt.Errorf("no RGD found with label %s=%s", rgdLabelKey, r.scaleSetName)
+		log.Printf("No RGD found with labels: %s", selector)
+		return nil, nil // Return nil instead of error to allow fallback
 	}
 
 	if len(rgdList.Items) > 1 {
-		return nil, fmt.Errorf("multiple RGDs found with label %s=%s, expected exactly one", rgdLabelKey, r.scaleSetName)
+		return nil, fmt.Errorf("multiple RGDs found with labels %s, expected exactly one", selector)
 	}
 
 	rgd := &rgdList.Items[0]
@@ -179,11 +209,17 @@ func (r *KRORunner) CreateResources(ctx context.Context, runnerName string, jitC
 		return errors.Wrap(err, "failed to get orchestrator pod for owner reference")
 	}
 
-	// Discover the RGD
+	// Find RGD by scale-set-name label
+	// The unified RGD uses includeWhen conditionals to decide between reusable/ephemeral instances
 	rgdInfo, err := r.findRGDByLabel(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to discover RGD")
 	}
+	if rgdInfo == nil {
+		return fmt.Errorf("no RGD found for scale-set: %s", r.scaleSetName)
+	}
+
+	log.Printf("Using RGD: %s (instance type determined by runnerIndex < minRunners)", rgdInfo.Name)
 
 	// Note: We don't create a JIT secret - ARC already created one with the runner name
 	// The RGD will reference the ARC-created secret directly
@@ -231,10 +267,19 @@ func (r *KRORunner) CreateResources(ctx context.Context, runnerName string, jitC
 		},
 	})
 
-	// Build the spec - just pass the runner name
-	// The RGD will use this to reference the ARC-created secret
+	// Build the spec for EC2Runner RGD
 	spec := map[string]interface{}{
-		"runnerName": runnerName,
+		"scaleSetName": r.scaleSetName,
+		"runnerIndex":  r.runnerIndex,
+		"minRunners":   r.minRunners,
+	}
+
+	// Add optional configuration
+	if r.imageID != "" {
+		spec["imageID"] = r.imageID
+	}
+	if r.instanceType != "" {
+		spec["instanceType"] = r.instanceType
 	}
 
 	rgInstance.Object["spec"] = spec
@@ -365,7 +410,7 @@ func (r *KRORunner) WaitForResourceGraph(ctx context.Context) error {
 	}
 }
 
-// DeleteResources cleans up the ResourceGraph instance and secret
+// DeleteResources cleans up the ResourceGraph instance
 func (r *KRORunner) DeleteResources(ctx context.Context) error {
 	appCtx := GetAppContext()
 	runnerName := appCtx.GetVMIName()
@@ -373,28 +418,28 @@ func (r *KRORunner) DeleteResources(ctx context.Context) error {
 
 	log.Printf("Cleaning up ResourceGraph resources for runner: %s", runnerName)
 
-	// Discover the RGD to get the Kind
+	// Discover RGD
 	rgdInfo, err := r.findRGDByLabel(ctx)
 	if err != nil {
 		log.Printf("Warning: failed to discover RGD for cleanup: %v", err)
-		// Continue with cleanup anyway
 	}
 
 	if rgdInfo != nil {
-		// Delete the ResourceGraph instance
 		rgGVR := schema.GroupVersionResource{
 			Group:    "kro.run",
 			Version:  "v1alpha1",
 			Resource: toResourceName(rgdInfo.Kind),
 		}
 
+		// Delete ResourceGraph (KRO handles cascade deletion based on RGD configuration)
+		log.Printf("Deleting ResourceGraph (KRO will handle instance lifecycle per RGD policies)")
 		if err := r.dynamicClient.Resource(rgGVR).Namespace(r.namespace).Delete(
 			ctx, runnerName, metav1.DeleteOptions{}); err != nil {
 			if !k8serrors.IsNotFound(err) {
 				log.Printf("Failed to delete ResourceGraph instance %s: %v", runnerName, err)
 			}
 		} else {
-			log.Printf("Deleted ResourceGraph instance: %s", runnerName)
+			log.Printf("✓ Deleted ResourceGraph instance: %s", runnerName)
 		}
 	}
 

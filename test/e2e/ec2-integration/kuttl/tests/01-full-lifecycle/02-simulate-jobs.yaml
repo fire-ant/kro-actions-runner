@@ -1,0 +1,86 @@
+# Step 1: Simulate 5 GitHub jobs arriving by running kar with mocked data
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      set -e
+      NAMESPACE=arc-runners
+      SCALE_SET_NAME=integration-test-runners
+
+      echo "=== Simulating 5 GitHub Jobs with kar ==="
+      echo ""
+
+      # Function to create a runner pod that runs kar
+      create_runner() {
+        local RUNNER_NAME=$1
+        local RUNNER_INDEX=$2
+        local JIT_CONFIG=$3
+
+        echo "Creating runner pod: $RUNNER_NAME (index $RUNNER_INDEX)"
+
+        # Create JIT secret for this runner (matching EC2Runner RGD expectations)
+        kubectl create secret generic "${SCALE_SET_NAME}-${RUNNER_INDEX}" \
+          -n ${NAMESPACE} \
+          --from-literal=.jitconfig="${JIT_CONFIG}" \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+        # Create a pod that runs kar
+        kubectl apply -f - <<EOF
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: ${RUNNER_NAME}
+        namespace: ${NAMESPACE}
+        labels:
+          actions.github.com/scale-set-name: "${SCALE_SET_NAME}"
+          runner-index: "${RUNNER_INDEX}"
+      spec:
+        serviceAccountName: kar-test
+        restartPolicy: Never
+        containers:
+          - name: runner
+            image: localhost:5005/kro-actions-runner:latest
+            imagePullPolicy: IfNotPresent
+            env:
+              - name: ACTIONS_RUNNER_SCALE_SET_NAME
+                value: "${SCALE_SET_NAME}"
+              - name: RUNNER_NAME
+                value: "${RUNNER_NAME}"
+              - name: ACTIONS_RUNNER_INPUT_JITCONFIG
+                value: "${JIT_CONFIG}"
+              - name: KAR_WAIT_INDEFINITELY
+                value: "true"
+              - name: KAR_CLEANUP_TIMEOUT
+                value: "300s"
+              - name: KAR_RUNNER_INDEX
+                value: "${RUNNER_INDEX}"
+              - name: KAR_MIN_RUNNERS
+                value: "3"
+              - name: KAR_IMAGE_ID
+                value: "ami-test-runner"
+              - name: KAR_INSTANCE_TYPE
+                value: "t3.micro"
+      EOF
+      }
+
+      # Runner 0 (index 0 < minRunners=3, REUSABLE)
+      create_runner "${SCALE_SET_NAME}-0" "0" "eyJydW5uZXJOYW1lIjoicnVubmVyLTAiLCJ1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vdGVzdC1vcmcvdGVzdC1yZXBvIiwidG9rZW4iOiJ0b2tlbi0wIn0="
+
+      # Runner 1 (index 1 < minRunners=3, REUSABLE)
+      create_runner "${SCALE_SET_NAME}-1" "1" "eyJydW5uZXJOYW1lIjoicnVubmVyLTEiLCJ1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vdGVzdC1vcmcvdGVzdC1yZXBvIiwidG9rZW4iOiJ0b2tlbi0xIn0="
+
+      # Runner 2 (index 2 < minRunners=3, REUSABLE)
+      create_runner "${SCALE_SET_NAME}-2" "2" "eyJydW5uZXJOYW1lIjoicnVubmVyLTIiLCJ1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vdGVzdC1vcmcvdGVzdC1yZXBvIiwidG9rZW4iOiJ0b2tlbi0yIn0="
+
+      # Runner 3 (index 3 >= minRunners=3, EPHEMERAL)
+      create_runner "${SCALE_SET_NAME}-3" "3" "eyJydW5uZXJOYW1lIjoicnVubmVyLTMiLCJ1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vdGVzdC1vcmcvdGVzdC1yZXBvIiwidG9rZW4iOiJ0b2tlbi0zIn0="
+
+      # Runner 4 (index 4 >= minRunners=3, EPHEMERAL)
+      create_runner "${SCALE_SET_NAME}-4" "4" "eyJydW5uZXJOYW1lIjoicnVubmVyLTQiLCJ1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vdGVzdC1vcmcvdGVzdC1yZXBvIiwidG9rZW4iOiJ0b2tlbi00In0="
+
+      echo ""
+      echo "Waiting for kar to create EC2Runners..."
+      sleep 10
+
+      echo ""
+      echo "✅ All runner pods created"

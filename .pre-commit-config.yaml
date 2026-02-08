@@ -27,7 +27,7 @@ repos:
         # E006 check for lines longer than 79 columns
         # E042 local declaration hides errors
         # E043 Arithmetic compound has inconsistent return semantics
-        args: ["-v", "-iE006", "-iE005,E042,E043"]
+        args: ["-v", "-iE005,E006,E042,E043"]
         files: .*\.sh
         exclude: ".tox/.*"
   - repo: https://github.com/google/yamlfmt

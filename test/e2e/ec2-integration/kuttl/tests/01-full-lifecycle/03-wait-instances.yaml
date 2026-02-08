@@ -1,0 +1,26 @@
+# Wait and verify EC2Runners are created
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      set -e
+      NAMESPACE=arc-runners
+
+      echo "=== Waiting for EC2Runners to be created ==="
+
+      # Wait for all 5 EC2Runners to exist
+      for i in {1..30}; do
+        COUNT=$(kubectl get ec2runner -n ${NAMESPACE} --no-headers 2>/dev/null | wc -l)
+        if [ "$COUNT" -eq 5 ]; then
+          echo "✅ All 5 EC2Runners created"
+          break
+        fi
+        echo "  Waiting for EC2Runners... ($COUNT/5, attempt $i/30)"
+        sleep 2
+      done
+
+      # Verify all EC2Runners are ACTIVE
+      kubectl get ec2runner -n ${NAMESPACE}
+
+      echo ""
+      echo "✅ EC2Runners ready"

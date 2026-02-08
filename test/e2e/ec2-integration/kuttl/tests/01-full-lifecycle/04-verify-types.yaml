@@ -1,0 +1,102 @@
+# Step 2: Verify instances have correct types and save IDs
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      set -e
+      NAMESPACE=arc-runners
+
+      echo "=== Verifying Instance Types ==="
+      echo ""
+
+      # Check reusable instances
+      for i in 0 1 2; do
+        INSTANCE_NAME="integration-test-runners-$i"
+        TYPE=$(kubectl get instance $INSTANCE_NAME -n $NAMESPACE -o jsonpath='{.metadata.labels.kro\.run/instance-type}')
+        INDEX=$(kubectl get instance $INSTANCE_NAME -n $NAMESPACE -o jsonpath='{.metadata.labels.kro\.run/runner-index}')
+        INSTANCE_ID=$(kubectl get instance $INSTANCE_NAME -n $NAMESPACE -o jsonpath='{.status.instanceID}')
+
+        echo "$INSTANCE_NAME:"
+        echo "  Type: $TYPE (expected: reusable)"
+        echo "  Index: $INDEX (expected: $i)"
+        echo "  Instance ID: $INSTANCE_ID"
+
+        if [ "$TYPE" != "reusable" ]; then
+          echo "  ❌ FAIL: Expected type=reusable, got $TYPE"
+          exit 1
+        fi
+
+        if [ "$INDEX" != "$i" ]; then
+          echo "  ❌ FAIL: Expected index=$i, got $INDEX"
+          exit 1
+        fi
+
+        # Check has adoption and retention annotations
+        ADOPTION=$(kubectl get instance $INSTANCE_NAME -n $NAMESPACE -o jsonpath='{.metadata.annotations.services\.k8s\.aws/adoption-policy}')
+        DELETION=$(kubectl get instance $INSTANCE_NAME -n $NAMESPACE -o jsonpath='{.metadata.annotations.services\.k8s\.aws/deletion-policy}')
+
+        if [ "$ADOPTION" != "adopt-or-create" ]; then
+          echo "  ❌ FAIL: Expected adoption-policy=adopt-or-create, got $ADOPTION"
+          exit 1
+        fi
+
+        if [ "$DELETION" != "retain" ]; then
+          echo "  ❌ FAIL: Expected deletion-policy=retain, got $DELETION"
+          exit 1
+        fi
+
+        echo "  ✅ PASS: Reusable instance configured correctly"
+
+        # Save instance ID for later verification
+        echo "$INSTANCE_ID" > /tmp/reusable-$i-id
+        echo ""
+      done
+
+      # Check ephemeral instances
+      for i in 3 4; do
+        INSTANCE_NAME="integration-test-runners-$i"
+        TYPE=$(kubectl get instance $INSTANCE_NAME -n $NAMESPACE -o jsonpath='{.metadata.labels.kro\.run/instance-type}')
+        INDEX=$(kubectl get instance $INSTANCE_NAME -n $NAMESPACE -o jsonpath='{.metadata.labels.kro\.run/runner-index}')
+        INSTANCE_ID=$(kubectl get instance $INSTANCE_NAME -n $NAMESPACE -o jsonpath='{.status.instanceID}')
+
+        echo "$INSTANCE_NAME:"
+        echo "  Type: $TYPE (expected: ephemeral)"
+        echo "  Index: $INDEX (expected: $i)"
+        echo "  Instance ID: $INSTANCE_ID"
+
+        if [ "$TYPE" != "ephemeral" ]; then
+          echo "  ❌ FAIL: Expected type=ephemeral, got $TYPE"
+          exit 1
+        fi
+
+        if [ "$INDEX" != "$i" ]; then
+          echo "  ❌ FAIL: Expected index=$i, got $INDEX"
+          exit 1
+        fi
+
+        # Check NO adoption/retention annotations
+        ADOPTION=$(kubectl get instance $INSTANCE_NAME -n $NAMESPACE -o jsonpath='{.metadata.annotations.services\.k8s\.aws/adoption-policy}' 2>/dev/null || echo "")
+        DELETION=$(kubectl get instance $INSTANCE_NAME -n $NAMESPACE -o jsonpath='{.metadata.annotations.services\.k8s\.aws/deletion-policy}' 2>/dev/null || echo "")
+
+        if [ -n "$ADOPTION" ]; then
+          echo "  ❌ FAIL: Ephemeral instance should NOT have adoption-policy"
+          exit 1
+        fi
+
+        if [ "$DELETION" = "retain" ]; then
+          echo "  ❌ FAIL: Ephemeral instance should NOT have deletion-policy=retain"
+          exit 1
+        fi
+
+        echo "  ✅ PASS: Ephemeral instance configured correctly"
+
+        # Save instance ID for later verification
+        echo "$INSTANCE_ID" > /tmp/ephemeral-$i-id
+        echo ""
+      done
+
+      echo "=== Instance Summary ==="
+      kubectl get instances -n $NAMESPACE -o custom-columns='NAME:.metadata.name,ID:.status.instanceID,TYPE:.metadata.labels.kro\.run/instance-type,INDEX:.metadata.labels.kro\.run/runner-index,STATE:.status.state.name'
+
+      echo ""
+      echo "✅ All instances verified successfully!"

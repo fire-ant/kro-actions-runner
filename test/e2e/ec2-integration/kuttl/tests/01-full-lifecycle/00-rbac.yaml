@@ -1,0 +1,58 @@
+# RBAC for kar to manage EC2Runners
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kar-test
+  namespace: arc-runners
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kar-test
+  namespace: arc-runners
+rules:
+  # kar needs to create/update/delete ResourceGraph instances (EC2Runner, EC2RunnerWithVPC, etc.)
+  - apiGroups: ["kro.run"]
+    resources: ["ec2runners", "ec2runnerwithvpcs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # kar needs to read pods (to get owner reference info)
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kar-test
+  namespace: arc-runners
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kar-test
+subjects:
+  - kind: ServiceAccount
+    name: kar-test
+    namespace: arc-runners
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kar-test-rgd-reader
+rules:
+  # kar needs to list RGDs at cluster scope for discovery
+  - apiGroups: ["kro.run"]
+    resources: ["resourcegraphdefinitions"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kar-test-rgd-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kar-test-rgd-reader
+subjects:
+  - kind: ServiceAccount
+    name: kar-test
+    namespace: arc-runners

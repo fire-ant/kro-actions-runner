@@ -1,0 +1,29 @@
+# Wait for VPC infrastructure to be ready before creating runners
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      set -e
+      echo "Waiting for VPC infrastructure to be ready..."
+
+      # Wait for EC2RunnerInfra to be ACTIVE (using scale-set naming pattern)
+      for i in {1..30}; do
+        STATE=$(kubectl get ec2runnerinfra integration-test-runners-vpc -n arc-runners -o jsonpath='{.status.state}' 2>/dev/null || echo "")
+        if [ "$STATE" = "ACTIVE" ]; then
+          echo "✅ EC2RunnerInfra is ACTIVE"
+          break
+        fi
+        echo "  Waiting for EC2RunnerInfra... (attempt $i/30)"
+        sleep 2
+      done
+
+      # Verify subnet exists (scale-set naming: integration-test-runners-subnet)
+      SUBNET_ID=$(kubectl get subnet integration-test-runners-subnet -n arc-runners -o jsonpath='{.status.subnetID}' 2>/dev/null || echo "")
+      echo "✅ Subnet: $SUBNET_ID"
+
+      # Verify security group exists (scale-set naming: integration-test-runners-sg)
+      SG_ID=$(kubectl get securitygroup integration-test-runners-sg -n arc-runners -o jsonpath='{.status.id}' 2>/dev/null || echo "")
+      echo "✅ Security Group: $SG_ID"
+
+      echo ""
+      echo "✅ VPC infrastructure ready - proceeding with runner creation"

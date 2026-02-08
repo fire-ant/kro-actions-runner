@@ -139,7 +139,7 @@ func TestNewKRORunner(t *testing.T) {
 	namespace := "default"
 	scaleSetName := "test-scale-set"
 
-	runner := NewKRORunner(namespace, nil, nil, scaleSetName)
+	runner := NewKRORunner(namespace, nil, nil, scaleSetName, 0, 3, "", "")
 	if runner == nil {
 		t.Fatal("NewKRORunner returned nil")
 	}
@@ -155,7 +155,7 @@ func TestNewKRORunner(t *testing.T) {
 
 // TestCreateResourcesValidation tests input validation for CreateResources
 func TestCreateResourcesValidation(t *testing.T) {
-	runner := NewKRORunner("default", nil, nil, "test-scale-set")
+	runner := NewKRORunner("default", nil, nil, "test-scale-set", 0, 3, "", "")
 
 	tests := []struct {
 		name        string

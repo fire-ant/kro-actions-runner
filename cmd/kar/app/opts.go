@@ -24,4 +24,8 @@ type Opts struct {
 	// Runner configuration
 	RunnerName string
 	JitConfig  string
+
+	// WaitIndefinitely makes kar wait forever after creating resources (for testing/simulation)
+	// When true, kar only cleans up on SIGTERM/SIGINT
+	WaitIndefinitely bool
 }
